@@ -126,22 +126,22 @@ function face(x, y) {
 const LINES = {
   pikachu: [
     { name: "Pikachu", at: 0, body: "#f7d02c", dark: "#8b6914", border: ["#f7d02c", "#fbe18c", "#fff"] },
-    { name: "Raichu", at: 8, body: "#f0a030", dark: "#8b4a14", border: ["#f0a030", "#f4b96e", "#fff"] }
+    { name: "Raichu", at: 25, body: "#f0a030", dark: "#8b4a14", border: ["#f0a030", "#f4b96e", "#fff"] }
   ],
   bulbasaur: [
     { name: "Bulbasaur", at: 0, body: "#74c9a0", dark: "#3d8b6e", border: ["#74c9a0", "#a8ddc4", "#fff"] },
-    { name: "Ivysaur", at: 5, body: "#5cb88a", dark: "#2f6e52", border: ["#5cb88a", "#96d2b5", "#fff"] },
-    { name: "Venusaur", at: 12, body: "#3fa06e", dark: "#245c40", border: ["#3fa06e", "#84c3a5", "#fff"] }
+    { name: "Ivysaur", at: 15, body: "#5cb88a", dark: "#2f6e52", border: ["#5cb88a", "#96d2b5", "#fff"] },
+    { name: "Venusaur", at: 40, body: "#3fa06e", dark: "#245c40", border: ["#3fa06e", "#84c3a5", "#fff"] }
   ],
   charmander: [
     { name: "Charmander", at: 0, body: "#f08030", dark: "#c45c18", border: ["#f08030", "#f4ac76", "#fff"] },
-    { name: "Charmeleon", at: 5, body: "#e06020", dark: "#a04010", border: ["#e06020", "#ea9361", "#fff"] },
-    { name: "Charizard", at: 12, body: "#d35400", dark: "#8e2c00", border: ["#d35400", "#e08953", "#fff"] }
+    { name: "Charmeleon", at: 15, body: "#e06020", dark: "#a04010", border: ["#e06020", "#ea9361", "#fff"] },
+    { name: "Charizard", at: 40, body: "#d35400", dark: "#8e2c00", border: ["#d35400", "#e08953", "#fff"] }
   ],
   squirtle: [
     { name: "Squirtle", at: 0, body: "#5dade2", dark: "#2e86c1", border: ["#5dade2", "#95caec", "#fff"] },
-    { name: "Wartortle", at: 5, body: "#3498db", dark: "#1a6fa3", border: ["#3498db", "#7bbce7", "#fff"] },
-    { name: "Blastoise", at: 12, body: "#2471a3", dark: "#1a5276", border: ["#2471a3", "#6ba1c5", "#fff"] }
+    { name: "Wartortle", at: 15, body: "#3498db", dark: "#1a6fa3", border: ["#3498db", "#7bbce7", "#fff"] },
+    { name: "Blastoise", at: 40, body: "#2471a3", dark: "#1a5276", border: ["#2471a3", "#6ba1c5", "#fff"] }
   ]
 };
 
@@ -1120,7 +1120,10 @@ canvas.addEventListener(
     const t = e.changedTouches[0];
     const dx = t.clientX - touchX;
     const dy = t.clientY - touchY;
-    if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return;
+    if (Math.abs(dx) < 24 && Math.abs(dy) < 24) {
+      triggerAbility();
+      return;
+    }
     const d =
       Math.abs(dx) > Math.abs(dy)
         ? { x: dx > 0 ? 1 : -1, y: 0 }
@@ -1129,6 +1132,12 @@ canvas.addEventListener(
   },
   { passive: true }
 );
+
+canvas.addEventListener("click", () => {
+  if (playing && alive) {
+    triggerAbility();
+  }
+});
 
 selectedPokemon = "pikachu";
 lineKey = selectedPokemon;
