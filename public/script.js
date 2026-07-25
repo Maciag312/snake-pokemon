@@ -18,6 +18,9 @@ const pickEl = document.getElementById("pokemon");
 const menuEl = document.getElementById("menu");
 const startBtn = document.getElementById("start");
 const buyHeartBtn = document.getElementById("buyHeart");
+const usernameInput = document.getElementById("usernameInput");
+const leaderboardList = document.getElementById("leaderboardList");
+
 const COLS = Math.floor(canvas.width / SIZE);
 const ROWS = Math.floor(canvas.height / SIZE);
 const PAD = 1;
@@ -38,6 +41,83 @@ const HEART_SVG = `<svg class="slot" viewBox="0 0 24 24" aria-hidden="true">
     fill="#e74c3c" stroke="#922b21" stroke-width="1.2"/>
   <path d="M8 8c-.5 1 .2 2.2 1.2 2.5" fill="none" stroke="#f5b7b1" stroke-width="1.5" stroke-linecap="round"/>
 </svg>`;
+
+// --- Moduł Cookie & API (Przygotowane pod serwer) ---
+function setCookie(name, val) {
+  document.cookie = name + "=" + encodeURIComponent(val) + ";path=/;max-age=31536000";
+}
+
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  if (match) return decodeURIComponent(match[2]);
+  return "";
+}
+
+function getAgentCountry() {
+  try {
+    const lang = navigator.language || "en-US";
+    const parts = lang.split("-");
+    if (parts.length > 1) return parts[1].toUpperCase();
+    if (lang === "pl") return "PL";
+    return "UN";
+  } catch (e) {
+    return "UN";
+  }
+}
+
+// Symulacja zapytań HTTP
+const API_URL = "https://ey7s0l12je.execute-api.eu-central-1.amazonaws.com";
+
+async function apiFetchLeaderboard() {
+  try {
+    const res = await fetch(API_URL);
+    if (!res.ok) throw new Error("HTTP error");
+    return await res.json();
+  } catch (e) {
+    return [];
+  }
+}
+
+async function apiSubmitScore(entry) {
+  try {
+    await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(entry)
+    });
+    refreshLeaderboardUI();
+  } catch (e) {
+  }
+}
+
+// Inicjalizacja nazwy użytkownika
+let currentUsername = getCookie("snake_username") || "Gracz_" + Math.floor(Math.random() * 999);
+usernameInput.value = currentUsername;
+
+usernameInput.addEventListener("input", (e) => {
+  currentUsername = e.target.value.trim() || "Gracz";
+  setCookie("snake_username", currentUsername);
+});
+
+async function refreshLeaderboardUI() {
+  const lb = await apiFetchLeaderboard();
+  leaderboardList.innerHTML = "";
+  if (lb.length === 0) {
+    leaderboardList.innerHTML = "<li>Brak wyników. Bądź pierwszy!</li>";
+    return;
+  }
+  lb.forEach((entry, idx) => {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <span>${idx + 1}. <span class="lb-user">${entry.username}</span></span>
+      <span class="lb-meta">[${entry.country}] ${entry.pokemon} <span class="lb-score">${entry.score}</span></span>
+    `;
+    leaderboardList.appendChild(li);
+  });
+}
+
+refreshLeaderboardUI();
+// --- Koniec modułu ---
 
 function buildSlots(el, svg, n) {
   el.innerHTML = svg.repeat(n);
@@ -138,6 +218,7 @@ let lineKey, mon, evoFlash;
 let gems = 0;
 let hearts = 0;
 let pops = [];
+let scoreSubmitted = false;
 
 function pulseSlot(nodes, index) {
   const el = nodes[index];
@@ -250,12 +331,14 @@ function reset() {
   alive = true;
   evoFlash = 0;
   pops = [];
+  scoreSubmitted = false;
   applyStage();
   updateHUD();
 }
 
 function showMenu() {
   playing = false;
+  refreshLeaderboardUI();
   menuEl.classList.remove("hidden");
 }
 
@@ -292,6 +375,20 @@ function revive() {
   updateHUD();
 }
 
+function handleGameOver() {
+  alive = false;
+  if (!scoreSubmitted && score > 0) {
+    scoreSubmitted = true;
+    apiSubmitScore({
+      username: currentUsername,
+      country: getAgentCountry(),
+      score: score,
+      pokemon: mon.name,
+      date: Date.now()
+    });
+  }
+}
+
 function step() {
   if (!playing || !alive) return;
   dir = nextDir;
@@ -303,7 +400,7 @@ function step() {
     snake.some((s) => s.x === head.x && s.y === head.y)
   ) {
     if (hearts > 0) revive();
-    else alive = false;
+    else handleGameOver();
     return;
   }
 
