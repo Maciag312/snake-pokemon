@@ -8,6 +8,7 @@ const heartSlotsEl = document.getElementById("heartSlots");
 const pickEl = document.getElementById("pokemon");
 const menuEl = document.getElementById("menu");
 const startBtn = document.getElementById("start");
+const buyHeartBtn = document.getElementById("buyHeart");
 const COLS = canvas.width / SIZE;
 const ROWS = canvas.height / SIZE;
 const PAD = 1;
@@ -646,6 +647,11 @@ function draw() {
   }
 }
 
+function setDir(d) {
+  if (!playing || !alive) return;
+  if (d && d.x + dir.x !== 0 && d.y + dir.y !== 0) nextDir = d;
+}
+
 document.addEventListener("keydown", (e) => {
   if (!playing) return;
   const map = {
@@ -667,9 +673,51 @@ document.addEventListener("keydown", (e) => {
   const d = map[e.key];
   if (d) {
     e.preventDefault();
-    if (d.x + dir.x !== 0 && d.y + dir.y !== 0) nextDir = d;
+    setDir(d);
   }
 });
+
+buyHeartBtn.addEventListener("click", () => {
+  if (playing && alive) buyHeart();
+});
+
+let touchX = 0;
+let touchY = 0;
+canvas.addEventListener(
+  "touchstart",
+  (e) => {
+    const t = e.changedTouches[0];
+    touchX = t.clientX;
+    touchY = t.clientY;
+  },
+  { passive: true }
+);
+canvas.addEventListener(
+  "touchmove",
+  (e) => {
+    if (playing) e.preventDefault();
+  },
+  { passive: false }
+);
+canvas.addEventListener(
+  "touchend",
+  (e) => {
+    if (!playing || !alive) {
+      if (playing && !alive) showMenu();
+      return;
+    }
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchX;
+    const dy = t.clientY - touchY;
+    if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return;
+    const d =
+      Math.abs(dx) > Math.abs(dy)
+        ? { x: dx > 0 ? 1 : -1, y: 0 }
+        : { x: 0, y: dy > 0 ? 1 : -1 };
+    setDir(d);
+  },
+  { passive: true }
+);
 
 lineKey = pickEl.value;
 reset();

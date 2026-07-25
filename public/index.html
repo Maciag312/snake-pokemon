@@ -2,21 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Snake</title>
   <style>
     * { margin: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
     body {
       min-height: 100vh;
+      min-height: 100dvh;
       display: grid;
       place-items: center;
       background: #1a1520;
       color: #eee;
       font: 14px monospace;
+      padding: 8px;
+    }
+    .page {
+      width: min(100%, 832px);
+      max-width: 100%;
     }
     #wrap {
       position: relative;
-      padding: 16px;
+      width: 100%;
+      padding: clamp(8px, 2vw, 16px);
       background: linear-gradient(180deg, #c4a574 0%, #a67c52 40%, #8b6340 100%);
       box-shadow:
         inset 0 0 0 3px #5c3d28,
@@ -31,39 +43,44 @@
     .post-br {
       content: "";
       position: absolute;
-      width: 22px;
-      height: 22px;
+      width: 18px;
+      height: 18px;
       background: radial-gradient(circle at 35% 35%, #e8d5b5, #8b6340 60%, #5c3d28);
       border: 2px solid #3d2818;
       border-radius: 3px;
       z-index: 2;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
     }
-    #wrap::before { top: 5px; left: 5px; }
-    #wrap::after { top: 5px; right: 5px; }
-    .post-bl { bottom: 5px; left: 5px; }
-    .post-br { bottom: 5px; right: 5px; }
+    #wrap::before { top: 4px; left: 4px; }
+    #wrap::after { top: 4px; right: 4px; }
+    .post-bl { bottom: 4px; left: 4px; }
+    .post-br { bottom: 4px; right: 4px; }
     canvas {
       background: #2a2438;
       image-rendering: pixelated;
       display: block;
+      width: 100%;
+      height: auto;
+      max-width: 100%;
       border: 3px solid #5c3d28;
       box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.35);
+      touch-action: none;
     }
     .bar {
-      margin-top: 14px;
+      margin-top: 12px;
       display: flex;
-      gap: 14px;
+      gap: 8px;
       align-items: center;
       justify-content: center;
       flex-wrap: wrap;
+      width: 100%;
     }
     .stat {
       display: inline-flex;
       align-items: center;
       gap: 8px;
       background: rgba(0, 0, 0, 0.4);
-      padding: 6px 12px;
+      padding: 6px 10px;
       border: 1px solid #5a4a6a;
       border-radius: 4px;
     }
@@ -92,13 +109,14 @@
     }
     #menu {
       position: absolute;
-      inset: 16px;
+      inset: clamp(8px, 2vw, 16px);
       display: grid;
       place-items: center;
       background: rgba(20, 16, 28, 0.9);
       text-align: center;
       gap: 12px;
       z-index: 3;
+      padding: 12px;
     }
     #menu.hidden { display: none; }
     select, button {
@@ -107,14 +125,15 @@
       border: 1px solid #5a4a6a;
       font: inherit;
       padding: 6px 10px;
+      max-width: 100%;
     }
     button { cursor: pointer; }
     button:hover { background: #3a3450; }
-    #hint { opacity: 0.7; font-size: 12px; margin-top: 6px; }
+    #hint { opacity: 0.7; font-size: 12px; margin-top: 6px; max-width: 28ch; margin-inline: auto; }
   </style>
 </head>
 <body>
-  <div>
+  <div class="page">
     <div id="wrap">
       <span class="post-bl"></span>
       <span class="post-br"></span>
@@ -128,7 +147,7 @@
             <option value="charmander">Charmander → Charmeleon → Charizard</option>
             <option value="squirtle">Squirtle → Wartortle → Blastoise</option>
           </select>
-          <p id="hint">Max 3◆ / 3♥ · naciśnij H = serce za 3◆ · ewolucja 5 / 12</p>
+          <p id="hint">Swipe / strzałki · H lub ♥ = serce (3◆) · ewolucja 5 / 12</p>
         </div>
         <button id="start" type="button">Start</button>
       </div>
@@ -142,6 +161,7 @@
       <span class="stat" id="heartStat" title="Serca">
         <span class="slots" id="heartSlots"></span>
       </span>
+      <button id="buyHeart" type="button" class="stat" title="Kup serce za 3 diamenty">♥ kup</button>
     </div>
   </div>
   <script src="script.js"></script>
