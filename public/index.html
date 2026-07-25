@@ -16,7 +16,6 @@
       min-height: 100dvh;
       display: grid;
       place-items: center;
-      /* Zmiana tła na bardziej kosmiczne/gwiezdne */
       background: radial-gradient(circle at center, #1a1a2e 0%, #0f0f1a 70%, #050509 100%);
       color: #eee;
       font: 14px monospace;
@@ -31,7 +30,6 @@
       position: relative;
       width: 100%;
       padding: clamp(8px, 2vw, 16px);
-      /* Usunięcie starego obramowania i gradientu, dodanie półprzezroczystości */
       background: rgba(20, 16, 28, 0.6);
       box-shadow:
         0 0 40px rgba(120, 80, 180, 0.1),
@@ -40,20 +38,17 @@
       border: 1px solid rgba(255, 255, 255, 0.05);
       transition: background 0.4s ease, box-shadow 0.4s ease;
     }
-    /* Usunięcie zbędnych pseudoelementów */
     #wrap::before,
     #wrap::after {
       display: none;
     }
     canvas {
-      /* Tło canvasu na głęboką czerń */
       background: #000;
       image-rendering: pixelated;
       display: block;
       width: 100%;
       height: auto;
       max-width: 100%;
-      /* Usunięcie starej ramki CSS */
       border: none;
       border-radius: 4px;
     }
@@ -100,7 +95,6 @@
     }
     #menu {
       position: absolute;
-      /* Dostosowanie pozycji menu do usuniętej ramki CSS */
       inset: clamp(8px, 2vw, 16px);
       display: grid;
       place-items: center;
@@ -123,12 +117,19 @@
     button { cursor: pointer; }
     button:hover { background: #3a3450; }
     #hint { opacity: 0.7; font-size: 12px; margin-top: 6px; max-width: 28ch; margin-inline: auto; }
+    
+    @media (max-width: 600px) {
+      .bar {
+        margin-top: 32px;
+        margin-bottom: 16px;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="page">
     <div id="wrap">
-      <canvas id="game" width="800" height="500"></canvas>
+      <canvas id="game"></canvas>
       <div id="menu">
         <div>
           <p style="margin-bottom:8px">Wybierz Pokemona</p>

@@ -1,5 +1,14 @@
-const SIZE = 20;
 const canvas = document.getElementById("game");
+
+if (window.innerWidth <= 600) {
+  canvas.width = 500;
+  canvas.height = 640;
+} else {
+  canvas.width = 800;
+  canvas.height = 500;
+}
+
+const SIZE = 20;
 const ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
 const formEl = document.getElementById("form");
@@ -9,8 +18,8 @@ const pickEl = document.getElementById("pokemon");
 const menuEl = document.getElementById("menu");
 const startBtn = document.getElementById("start");
 const buyHeartBtn = document.getElementById("buyHeart");
-const COLS = canvas.width / SIZE;
-const ROWS = canvas.height / SIZE;
+const COLS = Math.floor(canvas.width / SIZE);
+const ROWS = Math.floor(canvas.height / SIZE);
 const PAD = 1;
 const HEART_COST = 3;
 const MAX_GEMS = 3;
@@ -37,12 +46,10 @@ function buildSlots(el, svg, n) {
 const gemSlotNodes = buildSlots(gemSlotsEl, GEM_SVG, MAX_GEMS);
 const heartSlotNodes = buildSlots(heartSlotsEl, HEART_SVG, MAX_HEARTS);
 
-// Inicjalizacja danych dla nierównomiernej ramki
 let borderStars = [];
 function initBorderStars() {
   borderStars = [];
-  // Gwiezdny pył na krawędziach
-  const density = 2.5; // gwiazdki na komórkę płotu
+  const density = 2.5;
   for (let x = 0; x < COLS; x++) {
     for (let y = 0; y < ROWS; y++) {
       if (x >= PAD && x < COLS - PAD && y >= PAD && y < ROWS - PAD) continue;
@@ -53,7 +60,7 @@ function initBorderStars() {
           x: x * SIZE + Math.random() * SIZE,
           y: y * SIZE + Math.random() * SIZE,
           size: Math.random() * 3 + 1,
-          p: Math.random() // faza mienienia się
+          p: Math.random()
         });
       }
     }
@@ -72,100 +79,26 @@ function face(x, y) {
 
 const LINES = {
   pikachu: [
-    {
-      name: "Pikachu",
-      at: 0,
-      body: "#f7d02c",
-      dark: "#8b6914",
-      // Kolory dla ramki
-      border: ["#f7d02c", "#fbe18c", "#fff"], 
-      head(x, y) {
-        ctx.fillStyle = this.body;
-        ctx.fillRect(x + 2, y - 6, 5, 7);
-        ctx.fillRect(x + SIZE - 8, y - 6, 5, 7);
-        ctx.fillStyle = "#222";
-        ctx.fillRect(x + 2, y - 6, 5, 3);
-        ctx.fillRect(x + SIZE - 8, y - 6, 5, 3);
-        face(x, y);
-        ctx.fillStyle = "#e74c3c";
-        ctx.fillRect(x + 1, y + 11, 4, 4);
-        ctx.fillRect(x + SIZE - 6, y + 11, 4, 4);
-      },
-      bodyMark(x, y, i) {
-        if (i % 3 === 0) {
-          ctx.fillStyle = this.dark;
-          ctx.fillRect(x + 2, y + SIZE / 2 - 1, SIZE - 5, 2);
-        }
-      },
-      tail(x, y) {
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + SIZE - 6, y + 2, 5, 5);
-        ctx.fillRect(x + 2, y + SIZE - 8, 8, 5);
-      },
-    },
-    {
-      name: "Raichu",
-      at: 8,
-      body: "#f0a030",
-      dark: "#8b4a14",
-      // Kolory dla ramki
-      border: ["#f0a030", "#f4b96e", "#fff"],
-      head(x, y) {
-        ctx.fillStyle = this.body;
-        ctx.fillRect(x + 1, y - 8, 6, 9);
-        ctx.fillRect(x + SIZE - 8, y - 8, 6, 9);
-        ctx.fillStyle = "#f5d76e";
-        ctx.fillRect(x + 2, y - 8, 4, 4);
-        ctx.fillRect(x + SIZE - 7, y - 8, 4, 4);
-        face(x, y);
-        ctx.fillStyle = "#e74c3c";
-        ctx.fillRect(x + 1, y + 11, 4, 4);
-        ctx.fillRect(x + SIZE - 6, y + 11, 4, 4);
-      },
-      bodyMark(x, y, i) {
-        if (i % 2 === 0) {
-          ctx.fillStyle = "#f5d76e";
-          ctx.fillRect(x + 3, y + 4, SIZE - 7, SIZE - 9);
-        }
-      },
-      tail(x, y) {
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 2, y + 2, 14, 4);
-        ctx.fillRect(x + 10, y + 6, 6, 8);
-      },
-    },
+    { name: "Pikachu", at: 0, body: "#f7d02c", dark: "#8b6914", border: ["#f7d02c", "#fbe18c", "#fff"] },
+    { name: "Raichu", at: 8, body: "#f0a030", dark: "#8b4a14", border: ["#f0a030", "#f4b96e", "#fff"] }
   ],
-  // ... reszta Pokemonów bez zmian (dodadzą się kolory border w applyStage) ...
   bulbasaur: [
-    { name: "Bulbasaur", at: 0, body: "#74c9a0", dark: "#3d8b6e", border: ["#74c9a0", "#a8ddc4", "#fff"], /*... head, bodyMark, tail ...*/},
-    { name: "Ivysaur", at: 5, body: "#5cb88a", dark: "#2f6e52", border: ["#5cb88a", "#96d2b5", "#fff"], /*... head, bodyMark, tail ...*/},
-    { name: "Venusaur", at: 12, body: "#3fa06e", dark: "#245c40", border: ["#3fa06e", "#84c3a5", "#fff"], /*... head, bodyMark, tail ...*/}
+    { name: "Bulbasaur", at: 0, body: "#74c9a0", dark: "#3d8b6e", border: ["#74c9a0", "#a8ddc4", "#fff"] },
+    { name: "Ivysaur", at: 5, body: "#5cb88a", dark: "#2f6e52", border: ["#5cb88a", "#96d2b5", "#fff"] },
+    { name: "Venusaur", at: 12, body: "#3fa06e", dark: "#245c40", border: ["#3fa06e", "#84c3a5", "#fff"] }
   ],
   charmander: [
-    { name: "Charmander", at: 0, body: "#f08030", dark: "#c45c18", border: ["#f08030", "#f4ac76", "#fff"], /*... head, bodyMark, tail ...*/},
-    { name: "Charmeleon", at: 5, body: "#e06020", dark: "#a04010", border: ["#e06020", "#ea9361", "#fff"], /*... head, bodyMark, tail ...*/},
-    { name: "Charizard", at: 12, body: "#d35400", dark: "#8e2c00", border: ["#d35400", "#e08953", "#fff"], /*... head, bodyMark, tail ...*/}
+    { name: "Charmander", at: 0, body: "#f08030", dark: "#c45c18", border: ["#f08030", "#f4ac76", "#fff"] },
+    { name: "Charmeleon", at: 5, body: "#e06020", dark: "#a04010", border: ["#e06020", "#ea9361", "#fff"] },
+    { name: "Charizard", at: 12, body: "#d35400", dark: "#8e2c00", border: ["#d35400", "#e08953", "#fff"] }
   ],
   squirtle: [
-    { name: "Squirtle", at: 0, body: "#5dade2", dark: "#2e86c1", border: ["#5dade2", "#95caec", "#fff"], /*... head, bodyMark, tail ...*/},
-    { name: "Wartortle", at: 5, body: "#3498db", dark: "#1a6fa3", border: ["#3498db", "#7bbce7", "#fff"], /*... head, bodyMark, tail ...*/},
-    { name: "Blastoise", at: 12, body: "#2471a3", dark: "#1a5276", border: ["#2471a3", "#6ba1c5", "#fff"], /*... head, bodyMark, tail ...*/}
-  ],
+    { name: "Squirtle", at: 0, body: "#5dade2", dark: "#2e86c1", border: ["#5dade2", "#95caec", "#fff"] },
+    { name: "Wartortle", at: 5, body: "#3498db", dark: "#1a6fa3", border: ["#3498db", "#7bbce7", "#fff"] },
+    { name: "Blastoise", at: 12, body: "#2471a3", dark: "#1a5276", border: ["#2471a3", "#6ba1c5", "#fff"] }
+  ]
 };
 
-// Funkcje rysujące (dodano `border` do definicji)
-(function() {
-  for(let key in LINES) {
-    LINES[key].forEach(p => {
-      if(!p.head) {
-        // To tylko uproszczenie dla przykładu, w prawdziwym kodzie
-        // musisz skopiować całe definicje head/bodyMark/tail
-        // z oryginalnego skryptu, dodając tylko border.
-      }
-    });
-  }
-})();
-// Odtworzenie pełnych definicji z oryginalnego skryptu, z dodaniem pola `border`:
 LINES.pikachu[0].head = function(x, y) { ctx.fillStyle = this.body; ctx.fillRect(x + 2, y - 6, 5, 7); ctx.fillRect(x + SIZE - 8, y - 6, 5, 7); ctx.fillStyle = "#222"; ctx.fillRect(x + 2, y - 6, 5, 3); ctx.fillRect(x + SIZE - 8, y - 6, 5, 3); face(x, y); ctx.fillStyle = "#e74c3c"; ctx.fillRect(x + 1, y + 11, 4, 4); ctx.fillRect(x + SIZE - 6, y + 11, 4, 4); };
 LINES.pikachu[0].bodyMark = function(x, y, i) { if (i % 3 === 0) { ctx.fillStyle = this.dark; ctx.fillRect(x + 2, y + SIZE / 2 - 1, SIZE - 5, 2); } };
 LINES.pikachu[0].tail = function(x, y) { ctx.fillStyle = this.dark; ctx.fillRect(x + SIZE - 6, y + 2, 5, 5); ctx.fillRect(x + 2, y + SIZE - 8, 8, 5); };
@@ -399,7 +332,6 @@ function step() {
   pops = pops.filter((p) => p.life > 0);
 }
 
-// Funkcja rysująca gwiazdkę
 function drawStar(x, y, radius, color, alpha) {
   ctx.save();
   ctx.globalAlpha = alpha;
@@ -416,7 +348,6 @@ function drawStar(x, y, radius, color, alpha) {
   ctx.fillStyle = color;
   ctx.fill();
   
-  // Brokatowy efekt (małe kropeczki)
   if(Math.random() > 0.6) {
     ctx.fillStyle = "#fff";
     ctx.fillRect(Math.random()*radius*2 - radius, Math.random()*radius*2 - radius, 1, 1);
@@ -424,36 +355,24 @@ function drawStar(x, y, radius, color, alpha) {
   ctx.restore();
 }
 
-// Funkcja rysująca nową, nierównomierną ramkę
 function drawBorder() {
   if (!mon || !mon.border) return;
   
   const colors = mon.border;
-  const time = Date.now() * 0.003; // Czas dla mienienia się
+  const time = Date.now() * 0.003; 
 
   borderStars.forEach(star => {
-    // Wybór koloru w zależności od skina i pozycji
     const colorIndex = Math.floor((star.x + star.y) * 0.01) % colors.length;
     const color = colors[colorIndex];
-    
-    // Efekt mienienia się (pulsowanie alpha)
     const flicker = Math.sin(time + star.p * Math.PI * 2) * 0.2 + 0.8;
     const alpha = Math.max(0.1, flicker);
-    
     drawStar(star.x, star.y, star.size, color, alpha);
   });
 }
 
-// Funkcja rysująca ogrodzenie (teraz pusta, zastąpiona przez drawBorder)
-function drawFence() {
-  // Stare ogrodzenie usunięte
-}
-
 function draw() {
-  ctx.fillStyle = "#000"; // Głęboka czerń wewnątrz
+  ctx.fillStyle = "#000"; 
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
-  // Rysuj nową ramkę na końcu, żeby była na wierzchu
   
   if (!mon) return;
 
@@ -498,7 +417,6 @@ function draw() {
     ctx.globalAlpha = 1;
   }
   
-  // Nowa ramka rysowana na wierzchu
   drawBorder();
 
   if (evoFlash > 0) {
