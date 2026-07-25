@@ -14,11 +14,15 @@ const scoreEl = document.getElementById("score");
 const formEl = document.getElementById("form");
 const gemSlotsEl = document.getElementById("gemSlots");
 const heartSlotsEl = document.getElementById("heartSlots");
-const pickEl = document.getElementById("pokemon");
+const statusBarEl = document.getElementById("statusBar");
 const menuEl = document.getElementById("menu");
 const startBtn = document.getElementById("start");
 const usernameInput = document.getElementById("usernameInput");
 const leaderboardList = document.getElementById("leaderboardList");
+const abilityStatEl = document.getElementById("abilityStat");
+const abilityNameEl = document.getElementById("abilityName");
+const abilityChargesEl = document.getElementById("abilityCharges");
+let selectedPokemon = "pikachu";
 
 const COLS = Math.floor(canvas.width / SIZE);
 const ROWS = Math.floor(canvas.height / SIZE);
@@ -26,7 +30,7 @@ const PAD = 1;
 const HEART_COST = 3;
 const MAX_GEMS = 3;
 const MAX_HEARTS = 3;
-const DIAMOND_CHANCE = 0.05;
+const DIAMOND_CHANCE = 0.15;
 const DIAMOND_LIFE = 50;
 
 const API_URL = "https://ey7s0l12je.execute-api.eu-central-1.amazonaws.com";
@@ -122,22 +126,22 @@ function face(x, y) {
 const LINES = {
   pikachu: [
     { name: "Pikachu", at: 0, body: "#f7d02c", dark: "#8b6914", border: ["#f7d02c", "#fbe18c", "#fff"] },
-    { name: "Raichu", at: 10, body: "#f0a030", dark: "#8b4a14", border: ["#f0a030", "#f4b96e", "#fff"] }
+    { name: "Raichu", at: 8, body: "#f0a030", dark: "#8b4a14", border: ["#f0a030", "#f4b96e", "#fff"] }
   ],
   bulbasaur: [
     { name: "Bulbasaur", at: 0, body: "#74c9a0", dark: "#3d8b6e", border: ["#74c9a0", "#a8ddc4", "#fff"] },
-    { name: "Ivysaur", at: 10, body: "#5cb88a", dark: "#2f6e52", border: ["#5cb88a", "#96d2b5", "#fff"] },
-    { name: "Venusaur", at: 30, body: "#3fa06e", dark: "#245c40", border: ["#3fa06e", "#84c3a5", "#fff"] }
+    { name: "Ivysaur", at: 5, body: "#5cb88a", dark: "#2f6e52", border: ["#5cb88a", "#96d2b5", "#fff"] },
+    { name: "Venusaur", at: 12, body: "#3fa06e", dark: "#245c40", border: ["#3fa06e", "#84c3a5", "#fff"] }
   ],
   charmander: [
     { name: "Charmander", at: 0, body: "#f08030", dark: "#c45c18", border: ["#f08030", "#f4ac76", "#fff"] },
-    { name: "Charmeleon", at: 10, body: "#e06020", dark: "#a04010", border: ["#e06020", "#ea9361", "#fff"] },
-    { name: "Charizard", at: 30, body: "#d35400", dark: "#8e2c00", border: ["#d35400", "#e08953", "#fff"] }
+    { name: "Charmeleon", at: 5, body: "#e06020", dark: "#a04010", border: ["#e06020", "#ea9361", "#fff"] },
+    { name: "Charizard", at: 12, body: "#d35400", dark: "#8e2c00", border: ["#d35400", "#e08953", "#fff"] }
   ],
   squirtle: [
     { name: "Squirtle", at: 0, body: "#5dade2", dark: "#2e86c1", border: ["#5dade2", "#95caec", "#fff"] },
-    { name: "Wartortle", at: 10, body: "#3498db", dark: "#1a6fa3", border: ["#3498db", "#7bbce7", "#fff"] },
-    { name: "Blastoise", at: 30, body: "#2471a3", dark: "#1a5276", border: ["#2471a3", "#6ba1c5", "#fff"] }
+    { name: "Wartortle", at: 5, body: "#3498db", dark: "#1a6fa3", border: ["#3498db", "#7bbce7", "#fff"] },
+    { name: "Blastoise", at: 12, body: "#2471a3", dark: "#1a5276", border: ["#2471a3", "#6ba1c5", "#fff"] }
   ]
 };
 
@@ -181,6 +185,34 @@ for (const key in LINES) {
     MON_MAP[mon.name] = mon;
   });
 }
+
+function drawOptionHeads() {
+  const originalCtx = ctx;
+  document.querySelectorAll(".char-option").forEach(btn => {
+    const canvasIcon = btn.querySelector(".char-head");
+    if (!canvasIcon) return;
+    const pkName = btn.dataset.pokemon;
+    const monLine = LINES[pkName];
+    if (!monLine) return;
+    const mon = monLine[0];
+    ctx = canvasIcon.getContext("2d");
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    if (mon && mon.head) {
+      ctx.fillStyle = mon.body;
+      ctx.fillRect(0, 0, SIZE - 1, SIZE - 1);
+      mon.head(0, 0);
+    }
+  });
+  ctx = originalCtx;
+}
+
+document.querySelectorAll(".char-option").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".char-option").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedPokemon = btn.dataset.pokemon;
+  });
+});
 
 async function refreshLeaderboardUI() {
   const lb = await apiFetchLeaderboard();
@@ -239,6 +271,75 @@ let hearts = 0;
 let pops = [];
 let scoreSubmitted = false;
 
+let abilityUnlocked = false;
+let abilityCharges = 0;
+let abilityTimer = 0;
+let fireballs = [];
+let extraFoods = [];
+let abilityActive = false;
+let shieldTimeLeft = 0;
+let screenShake = 0;
+
+function triggerAbility() {
+  if (!playing || !alive || !abilityUnlocked || abilityCharges <= 0 || abilityActive) return;
+  abilityCharges--;
+  
+  if (lineKey === "charmander") {
+    screenShake = 8;
+    fireballs.push({
+      x: snake[0].x,
+      y: snake[0].y,
+      dx: dir.x,
+      dy: dir.y,
+      life: 25,
+      piercing: (mon && mon.name === "Charizard")
+    });
+    
+    for (let i = 0; i < 8; i++) {
+      const rx = snake[0].x + (Math.random() - 0.5) * 1.5;
+      const ry = snake[0].y + (Math.random() - 0.5) * 1.5;
+      addPop("fire", rx, ry);
+    }
+  } else if (lineKey === "bulbasaur") {
+    screenShake = 4;
+    const count = (mon && mon.name === "Venusaur") 
+      ? (Math.floor(Math.random() * 3) + 3) // 3 to 5
+      : (Math.floor(Math.random() * 3) + 1); // 1 to 3
+      
+    for (let i = 0; i < count; i++) {
+      extraFoods.push({ ...getFreePos(), ball: pickBall() });
+    }
+    
+    for (let i = 0; i < 10; i++) {
+      const rx = snake[0].x + (Math.random() - 0.5) * 2;
+      const ry = snake[0].y + (Math.random() - 0.5) * 2;
+      addPop("leaf", rx, ry);
+    }
+  } else if (lineKey === "squirtle") {
+    screenShake = 0;
+    abilityActive = true;
+    shieldTimeLeft = (mon && mon.name === "Blastoise") ? 40 : 25; // 8s or 5s
+    
+    for (let i = 0; i < 10; i++) {
+      const rx = snake[0].x + (Math.random() - 0.5) * 2;
+      const ry = snake[0].y + (Math.random() - 0.5) * 2;
+      addPop("bubble", rx, ry);
+    }
+  } else if (lineKey === "pikachu") {
+    screenShake = 2;
+    abilityActive = true;
+    shieldTimeLeft = 40; // 8 seconds
+    
+    for (let i = 0; i < 10; i++) {
+      const rx = snake[0].x + (Math.random() - 0.5) * 2;
+      const ry = snake[0].y + (Math.random() - 0.5) * 2;
+      addPop("spark", rx, ry);
+    }
+  }
+  
+  updateHUD();
+}
+
 function pulseSlot(nodes, index) {
   const el = nodes[index];
   if (!el) return;
@@ -277,6 +378,45 @@ function drawIcon(kind, x, y, scale) {
     ctx.closePath();
     ctx.fillStyle = "#d6eaf8";
     ctx.fill();
+  } else if (kind === "fire") {
+    ctx.beginPath();
+    ctx.moveTo(0, -10);
+    ctx.bezierCurveTo(-8, -4, -8, 6, 0, 10);
+    ctx.bezierCurveTo(8, 6, 8, -4, 0, -10);
+    ctx.closePath();
+    ctx.fillStyle = "#e67e22";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, 0, 4, 0, Math.PI * 2);
+    ctx.fillStyle = "#f1c40f";
+    ctx.fill();
+  } else if (kind === "leaf") {
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 8, 4, Math.PI / 4, 0, Math.PI * 2);
+    ctx.fillStyle = "#2ecc71";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 5, 2.5, Math.PI / 4, 0, Math.PI * 2);
+    ctx.fillStyle = "#27ae60";
+    ctx.fill();
+  } else if (kind === "bubble") {
+    ctx.beginPath();
+    ctx.arc(0, 0, 5, 0, Math.PI * 2);
+    ctx.strokeStyle = "#3498db";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(-1.5, -1.5, 1, 0, Math.PI * 2);
+    ctx.fillStyle = "#fff";
+    ctx.fill();
+  } else if (kind === "spark") {
+    ctx.strokeStyle = "#f1c40f";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-4 + Math.random() * 2, -4);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(4 - Math.random() * 2, 4);
+    ctx.stroke();
   } else {
     ctx.beginPath();
     ctx.moveTo(0, 8);
@@ -322,11 +462,74 @@ function updateHUD() {
   renderSlots(gemSlotNodes, gems);
   renderSlots(heartSlotNodes, hearts);
   if (mon) formEl.textContent = mon.name;
+  if (abilityUnlocked) {
+    if (abilityActive) {
+      const secs = (shieldTimeLeft * 200 / 1000).toFixed(1);
+      abilityChargesEl.textContent = secs + "s";
+      abilityStatEl.style.animation = (shieldTimeLeft < 15) ? "pop 0.3s infinite alternate" : "none";
+    } else {
+      abilityChargesEl.textContent = abilityCharges;
+      abilityStatEl.style.animation = "none";
+    }
+  }
 }
 
 function applyStage() {
   const next = stageFor(score);
-  if (mon && next.name !== mon.name) evoFlash = 20;
+  if (mon && next.name !== mon.name) {
+    evoFlash = 20;
+    if (lineKey === "charmander") {
+      if (next.name !== "Charmander" && !abilityUnlocked) {
+        abilityUnlocked = true;
+        abilityCharges = 3;
+        abilityTimer = 0;
+        abilityNameEl.textContent = "Ogień";
+        abilityStatEl.style.background = "#d35400";
+        abilityStatEl.style.borderColor = "#e67e22";
+        abilityStatEl.style.color = "#fff";
+        abilityStatEl.classList.remove("hidden");
+      } else if (next.name === "Charizard" && abilityUnlocked) {
+        abilityCharges = Math.min(5, abilityCharges + 2);
+      }
+    } else if (lineKey === "bulbasaur") {
+      if (next.name !== "Bulbasaur" && !abilityUnlocked) {
+        abilityUnlocked = true;
+        abilityCharges = 3;
+        abilityTimer = 0;
+        abilityNameEl.textContent = "Nasiona";
+        abilityStatEl.style.background = "#27ae60";
+        abilityStatEl.style.borderColor = "#2ecc71";
+        abilityStatEl.style.color = "#fff";
+        abilityStatEl.classList.remove("hidden");
+      } else if (next.name === "Venusaur" && abilityUnlocked) {
+        abilityCharges = Math.min(5, abilityCharges + 2);
+      }
+    } else if (lineKey === "squirtle") {
+      if (next.name !== "Squirtle" && !abilityUnlocked) {
+        abilityUnlocked = true;
+        abilityCharges = 2; // Wartortle starts with 2 charges
+        abilityTimer = 0;
+        abilityNameEl.textContent = "Skorupa";
+        abilityStatEl.style.background = "#2980b9";
+        abilityStatEl.style.borderColor = "#3498db";
+        abilityStatEl.style.color = "#fff";
+        abilityStatEl.classList.remove("hidden");
+      } else if (next.name === "Blastoise" && abilityUnlocked) {
+        abilityCharges = Math.min(3, abilityCharges + 1); // Blastoise cap 3, add 1 on evo
+      }
+    } else if (lineKey === "pikachu") {
+      if (next.name !== "Pikachu" && !abilityUnlocked) {
+        abilityUnlocked = true;
+        abilityCharges = 4; // Raichu starts with 4 charges
+        abilityTimer = 0;
+        abilityNameEl.textContent = "Elektro";
+        abilityStatEl.style.background = "#f1c40f";
+        abilityStatEl.style.borderColor = "#f39c12";
+        abilityStatEl.style.color = "#000";
+        abilityStatEl.classList.remove("hidden");
+      }
+    }
+  }
   mon = next;
   updateHUD();
 }
@@ -350,7 +553,8 @@ function getFreePos() {
   } while (
     snake.some((s) => s.x === p.x && s.y === p.y) ||
     (food && food.x === p.x && food.y === p.y) ||
-    (diamond && diamond.x === p.x && diamond.y === p.y)
+    (diamond && diamond.x === p.x && diamond.y === p.y) ||
+    (extraFoods && extraFoods.some((ef) => ef.x === p.x && ef.y === p.y))
   );
   return p;
 }
@@ -375,20 +579,32 @@ function reset() {
   evoFlash = 0;
   pops = [];
   scoreSubmitted = false;
+  
+  abilityUnlocked = false;
+  abilityCharges = 0;
+  abilityTimer = 0;
+  fireballs = [];
+  extraFoods = [];
+  screenShake = 0;
+  if (abilityStatEl) {
+    abilityStatEl.classList.add("hidden");
+  }
+  
   applyStage();
   updateHUD();
 }
 
 function showMenu() {
   playing = false;
+  statusBarEl.classList.add("hidden");
   refreshLeaderboardUI();
   menuEl.classList.remove("hidden");
 }
 
 function startGame() {
-  lineKey = pickEl.value;
+  lineKey = selectedPokemon;
   menuEl.classList.add("hidden");
-  pickEl.blur();
+  statusBarEl.classList.remove("hidden");
   startBtn.blur();
   reset();
   playing = true;
@@ -397,6 +613,7 @@ function startGame() {
 startBtn.addEventListener("click", startGame);
 
 function revive() {
+  hearts--;
   snake = [{ x: (COLS / 2) | 0, y: (ROWS / 2) | 0 }];
   dir = nextDir = { x: 1, y: 0 };
   updateHUD();
@@ -420,21 +637,44 @@ function step() {
   dir = nextDir;
   const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
 
-  if (
-    head.x < PAD || head.x >= COLS - PAD ||
-    head.y < PAD || head.y >= ROWS - PAD ||
-    snake.some((s) => s.x === head.x && s.y === head.y)
-  ) {
-    hearts--;
-    if (hearts > 0) {
-      revive();
-    } else {
-      handleGameOver();
-    }
+  let wallHit = (head.x < PAD || head.x >= COLS - PAD || head.y < PAD || head.y >= ROWS - PAD);
+  let selfHit = snake.some((s) => s.x === head.x && s.y === head.y);
+  
+  if (wallHit && abilityActive && shieldTimeLeft > 0) {
+    if (head.x < PAD) head.x = COLS - PAD - 1;
+    else if (head.x >= COLS - PAD) head.x = PAD;
+    
+    if (head.y < PAD) head.y = ROWS - PAD - 1;
+    else if (head.y >= ROWS - PAD) head.y = PAD;
+    
+    selfHit = snake.some((s) => s.x === head.x && s.y === head.y);
+    wallHit = false;
+  }
+  
+  if (wallHit || selfHit) {
+    if (hearts > 1) revive();
+    else handleGameOver();
     return;
   }
 
   snake.unshift(head);
+
+  // Magnet pull effect for Pikachu
+  if (lineKey === "pikachu" && abilityActive && shieldTimeLeft > 0) {
+    if (food) {
+      const dx = Math.sign(head.x - food.x);
+      const dy = Math.sign(head.y - food.y);
+      food.x += dx;
+      food.y += dy;
+    }
+    extraFoods.forEach(ef => {
+      const dx = Math.sign(head.x - ef.x);
+      const dy = Math.sign(head.y - ef.y);
+      ef.x += dx;
+      ef.y += dy;
+    });
+  }
+
   let ateFood = false;
 
   if (diamond && head.x === diamond.x && head.y === diamond.y) {
@@ -462,6 +702,19 @@ function step() {
     }
   }
 
+  // Collision with extraFoods
+  for (let i = extraFoods.length - 1; i >= 0; i--) {
+    const ef = extraFoods[i];
+    if (head.x === ef.x && head.y === ef.y) {
+      score += ef.ball.points;
+      applyStage();
+      updateHUD();
+      extraFoods.splice(i, 1);
+      ateFood = true;
+      break;
+    }
+  }
+
   if (!ateFood) {
     snake.pop();
   }
@@ -469,6 +722,138 @@ function step() {
   if (diamond) {
     diamond.life--;
     if (diamond.life <= 0) diamond = null;
+  }
+
+  // Update fireballs
+  for (let i = fireballs.length - 1; i >= 0; i--) {
+    const fb = fireballs[i];
+    let hit = false;
+    
+    for (let step = 0; step < 3; step++) {
+      fb.x += fb.dx;
+      fb.y += fb.dy;
+      fb.life--;
+
+      // Boundary check
+      if (fb.x < PAD || fb.x >= COLS - PAD || fb.y < PAD || fb.y >= ROWS - PAD || fb.life <= 0) {
+        fireballs.splice(i, 1);
+        hit = true;
+        break;
+      }
+
+      // Collision with food
+      if (food && fb.x === food.x && fb.y === food.y) {
+        score += food.ball.points;
+        applyStage();
+        updateHUD();
+        food = spawnFood();
+        for (let p = 0; p < 6; p++) {
+          addPop("fire", fb.x + (Math.random() - 0.5), fb.y + (Math.random() - 0.5));
+        }
+        if (!fb.piercing) {
+          fireballs.splice(i, 1);
+          hit = true;
+          break;
+        }
+      }
+
+      // Collision with extraFoods
+      for (let j = extraFoods.length - 1; j >= 0; j--) {
+        const ef = extraFoods[j];
+        if (fb.x === ef.x && fb.y === ef.y) {
+          score += ef.ball.points;
+          applyStage();
+          updateHUD();
+          extraFoods.splice(j, 1);
+          for (let p = 0; p < 6; p++) {
+            addPop("fire", fb.x + (Math.random() - 0.5), fb.y + (Math.random() - 0.5));
+          }
+          if (!fb.piercing) {
+            fireballs.splice(i, 1);
+            hit = true;
+            break;
+          }
+        }
+      }
+      if (hit) break;
+
+      // Collision with diamond
+      if (diamond && fb.x === diamond.x && fb.y === diamond.y) {
+        if (gems < MAX_GEMS) {
+          gems++;
+          pulseSlot(gemSlotNodes, gems - 1);
+          addPop("gem", diamond.x, diamond.y);
+        }
+        if (gems >= HEART_COST && hearts < MAX_HEARTS) {
+          buyHeart();
+        }
+        diamond = null;
+        updateHUD();
+        for (let p = 0; p < 6; p++) {
+          addPop("fire", fb.x + (Math.random() - 0.5), fb.y + (Math.random() - 0.5));
+        }
+        if (!fb.piercing) {
+          fireballs.splice(i, 1);
+          hit = true;
+          break;
+        }
+      }
+    }
+  }
+
+  // Regen charges: customized per pokemon line to balance defensive vs offensive abilities
+  let maxCharges = 3;
+  let regenTicks = 150; // 30s default
+  
+  if (lineKey === "squirtle") {
+    if (mon && mon.name === "Blastoise") {
+      maxCharges = 3;
+      regenTicks = 150; // 30s for Blastoise
+    } else {
+      maxCharges = 2;
+      regenTicks = 200; // 40s for Wartortle
+    }
+  } else if (lineKey === "charmander") {
+    if (mon && mon.name === "Charizard") {
+      maxCharges = 5;
+      regenTicks = 100; // 20s
+    } else {
+      maxCharges = 3;
+      regenTicks = 150; // 30s
+    }
+  } else if (lineKey === "bulbasaur") {
+    if (mon && mon.name === "Venusaur") {
+      maxCharges = 5;
+      regenTicks = 100; // 20s
+    } else {
+      maxCharges = 3;
+      regenTicks = 150; // 30s
+    }
+  } else if (lineKey === "pikachu") {
+    if (mon && mon.name === "Raichu") {
+      maxCharges = 4;
+      regenTicks = 125; // 25s
+    } else {
+      maxCharges = 3;
+      regenTicks = 150;
+    }
+  }
+
+  if (abilityUnlocked && abilityCharges < maxCharges) {
+    abilityTimer++;
+    if (abilityTimer >= regenTicks) {
+      abilityCharges++;
+      abilityTimer = 0;
+      updateHUD();
+    }
+  }
+
+  if (abilityActive) {
+    shieldTimeLeft--;
+    if (shieldTimeLeft <= 0) {
+      abilityActive = false;
+    }
+    updateHUD();
   }
 
   if (evoFlash > 0) evoFlash--;
@@ -523,6 +908,43 @@ function draw() {
   
   if (!mon) return;
 
+  ctx.save();
+  if (screenShake > 0) {
+    const dx = (Math.random() - 0.5) * 8;
+    const dy = (Math.random() - 0.5) * 8;
+    ctx.translate(dx, dy);
+    screenShake--;
+  }
+
+  // Draw fireballs
+  fireballs.forEach(fb => {
+    ctx.save();
+    const fbx = fb.x * SIZE + SIZE / 2;
+    const fby = fb.y * SIZE + SIZE / 2;
+    const radius = fb.piercing ? (SIZE + 6) : (SIZE / 2 + 4);
+    const grad = ctx.createRadialGradient(fbx, fby, 2, fbx, fby, radius);
+    grad.addColorStop(0, '#fff');
+    grad.addColorStop(0.2, '#f1c40f');
+    grad.addColorStop(0.6, '#e67e22');
+    grad.addColorStop(1, 'rgba(231, 76, 60, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(fbx, fby, radius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    const trailCount = fb.piercing ? 8 : 4;
+    for (let p = 0; p < trailCount; p++) {
+      const scale = fb.piercing ? 0.25 : 0.35;
+      const tx = fbx - fb.dx * SIZE * (p * scale) + (Math.random() - 0.5) * (fb.piercing ? 12 : 6);
+      const ty = fby - fb.dy * SIZE * (p * scale) + (Math.random() - 0.5) * (fb.piercing ? 12 : 6);
+      ctx.fillStyle = p % 2 === 0 ? '#e67e22' : '#f1c40f';
+      ctx.beginPath();
+      ctx.arc(tx, ty, (trailCount - p) * (fb.piercing ? 2 : 1.5), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  });
+
   const fx = food.x * SIZE;
   const fy = food.y * SIZE;
   const ball = food.ball;
@@ -538,6 +960,55 @@ function draw() {
   ctx.fillRect(fx, fy + SIZE / 2 - 1, SIZE - 1, 2);
   ctx.fillRect(fx + SIZE / 2 - 2, fy + SIZE / 2 - 2, 4, 4);
 
+  // Draw extra foods
+  extraFoods.forEach(ef => {
+    const ex = ef.x * SIZE;
+    const ey = ef.y * SIZE;
+    const eball = ef.ball;
+    ctx.fillStyle = eball.top;
+    ctx.fillRect(ex, ey, SIZE - 1, (SIZE - 1) / 2);
+    ctx.fillStyle = "#eee";
+    ctx.fillRect(ex, ey + (SIZE - 1) / 2, SIZE - 1, (SIZE - 1) / 2);
+    if (eball.stripe) {
+      ctx.fillStyle = eball.stripe;
+      ctx.fillRect(ex + 2, ey + 2, SIZE - 5, 3);
+    }
+    ctx.fillStyle = "#111";
+    ctx.fillRect(ex, ey + SIZE / 2 - 1, SIZE - 1, 2);
+    ctx.fillRect(ex + SIZE / 2 - 2, ey + SIZE / 2 - 2, 4, 4);
+  });
+
+  // Draw electrical bolts for Pikachu
+  if (lineKey === "pikachu" && abilityActive && alive) {
+    ctx.save();
+    ctx.strokeStyle = "#f1c40f";
+    ctx.shadowColor = "#f39c12";
+    ctx.shadowBlur = 6;
+    ctx.lineWidth = 1.8;
+
+    const targets = [food, ...extraFoods];
+    targets.forEach(target => {
+      if (!target) return;
+      ctx.beginPath();
+      ctx.moveTo(snake[0].x * SIZE + SIZE / 2, snake[0].y * SIZE + SIZE / 2);
+      
+      let cx = snake[0].x * SIZE + SIZE / 2;
+      let cy = snake[0].y * SIZE + SIZE / 2;
+      const tx = target.x * SIZE + SIZE / 2;
+      const ty = target.y * SIZE + SIZE / 2;
+      
+      for (let i = 1; i <= 5; i++) {
+        const t = i / 5;
+        const offset = (i === 5) ? 0 : (Math.random() - 0.5) * 16;
+        const targetX = cx + (tx - cx) * t + offset;
+        const targetY = cy + (ty - cy) * t + offset;
+        ctx.lineTo(targetX, targetY);
+      }
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
   if (diamond) {
     if (diamond.life > 15 || diamond.life % 4 > 1) {
       drawIcon("gem", diamond.x * SIZE + SIZE / 2, diamond.y * SIZE + SIZE / 2, 0.85);
@@ -552,6 +1023,13 @@ function draw() {
 
     ctx.fillStyle = alive ? mon.body : "#555";
     ctx.fillRect(x, y, SIZE - 1, SIZE - 1);
+    
+    if (abilityActive && alive) {
+      ctx.strokeStyle = (shieldTimeLeft < 15 && Math.floor(Date.now() / 150) % 2 === 0) ? "#e74c3c" : "#3498db";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, SIZE - 1, SIZE - 1);
+    }
+    
     if (!alive) return;
 
     if (isHead) mon.head(x, y);
@@ -581,6 +1059,8 @@ function draw() {
     ctx.textAlign = "center";
     ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2);
   }
+
+  ctx.restore();
 }
 
 function setDir(d) {
@@ -596,9 +1076,13 @@ document.addEventListener("keydown", (e) => {
     ArrowLeft: { x: -1, y: 0 },
     ArrowRight: { x: 1, y: 0 },
   };
-  if (e.key === " " && !alive) {
+  if (e.key === " ") {
     e.preventDefault();
-    showMenu();
+    if (!alive) {
+      showMenu();
+    } else {
+      triggerAbility();
+    }
     return;
   }
   const d = map[e.key];
@@ -646,11 +1130,18 @@ canvas.addEventListener(
   { passive: true }
 );
 
-lineKey = pickEl.value;
+selectedPokemon = "pikachu";
+lineKey = selectedPokemon;
 reset();
 playing = false;
 draw();
+drawOptionHeads();
 refreshLeaderboardUI();
+
+if (abilityStatEl) {
+  abilityStatEl.addEventListener("click", triggerAbility);
+}
+
 tick = setInterval(() => {
   step();
   draw();

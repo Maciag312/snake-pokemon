@@ -149,6 +149,49 @@
     .lb-meta { display: flex; gap: 4px; align-items: center; }
     .lb-icon { width: 20px; height: 20px; image-rendering: pixelated; border-radius: 2px; }
 
+    .char-selector {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+    .char-option {
+      background: #2a2438;
+      border: 1px solid #5a4a6a;
+      border-radius: 6px;
+      padding: 6px 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s ease;
+      justify-content: flex-start;
+      color: #eee;
+      width: 100%;
+    }
+    .char-option:hover {
+      background: #352d47;
+      border-color: #7b629c;
+    }
+    .char-option.active {
+      background: #413758;
+      border-color: #a88be6;
+      box-shadow: 0 0 10px rgba(168, 139, 230, 0.4);
+    }
+    .char-head {
+      width: 20px;
+      height: 20px;
+      image-rendering: pixelated;
+      border-radius: 2px;
+      flex-shrink: 0;
+      background: rgba(0,0,0,0.25);
+    }
+    .hidden {
+      display: none !important;
+    }
+
     @media (max-width: 600px) {
       .bar {
         margin-top: 32px;
@@ -168,13 +211,25 @@
         </div>
         
         <div class="menu-group">
-          <label for="pokemon" style="font-size: 12px; color: #a89fbe;">Wybierz Pokemona</label>
-          <select id="pokemon">
-            <option value="pikachu">Pikachu → Raichu</option>
-            <option value="bulbasaur">Bulbasaur → Ivysaur → Venusaur</option>
-            <option value="charmander">Charmander → Charmeleon → Charizard</option>
-            <option value="squirtle">Squirtle → Wartortle → Blastoise</option>
-          </select>
+          <label style="font-size: 12px; color: #a89fbe; margin-bottom: 6px;">Wybierz Pokemona</label>
+          <div class="char-selector" id="charSelector">
+            <button type="button" class="char-option active" data-pokemon="pikachu">
+              <canvas class="char-head" width="20" height="20"></canvas>
+              <span>Pikachu</span>
+            </button>
+            <button type="button" class="char-option" data-pokemon="bulbasaur">
+              <canvas class="char-head" width="20" height="20"></canvas>
+              <span>Bulbasaur</span>
+            </button>
+            <button type="button" class="char-option" data-pokemon="charmander">
+              <canvas class="char-head" width="20" height="20"></canvas>
+              <span>Charmander</span>
+            </button>
+            <button type="button" class="char-option" data-pokemon="squirtle">
+              <canvas class="char-head" width="20" height="20"></canvas>
+              <span>Squirtle</span>
+            </button>
+          </div>
         </div>
         
         <button id="start" type="button">Start Game</button>
@@ -189,7 +244,7 @@
       </div>
     </div>
     
-    <div class="bar">
+    <div class="bar hidden" id="statusBar">
       <span class="stat"><span id="form">Pikachu</span></span>
       <span class="stat">Score: <span id="score">0</span></span>
       <span class="stat" id="gemStat" title="Diamenty">
@@ -198,6 +253,9 @@
       <span class="stat" id="heartStat" title="Serca">
         <span class="slots" id="heartSlots"></span>
       </span>
+      <button class="stat hidden" id="abilityStat" title="Użyj zdolności specjalnej (Spacja / Kliknij)" style="cursor: pointer; background: #d35400; border: 1px solid #e67e22; color: #fff; font-weight: bold; border-radius: 4px; transition: background 0.2s;">
+        <span id="abilityName">Ogień</span>: <span id="abilityCharges">3</span>
+      </button>
     </div>
   </div>
   <script src="script.js"></script>
