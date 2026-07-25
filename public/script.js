@@ -37,6 +37,30 @@ function buildSlots(el, svg, n) {
 const gemSlotNodes = buildSlots(gemSlotsEl, GEM_SVG, MAX_GEMS);
 const heartSlotNodes = buildSlots(heartSlotsEl, HEART_SVG, MAX_HEARTS);
 
+// Inicjalizacja danych dla nierównomiernej ramki
+let borderStars = [];
+function initBorderStars() {
+  borderStars = [];
+  // Gwiezdny pył na krawędziach
+  const density = 2.5; // gwiazdki na komórkę płotu
+  for (let x = 0; x < COLS; x++) {
+    for (let y = 0; y < ROWS; y++) {
+      if (x >= PAD && x < COLS - PAD && y >= PAD && y < ROWS - PAD) continue;
+      
+      const count = Math.random() * density + 1;
+      for(let i=0; i<count; i++) {
+        borderStars.push({
+          x: x * SIZE + Math.random() * SIZE,
+          y: y * SIZE + Math.random() * SIZE,
+          size: Math.random() * 3 + 1,
+          p: Math.random() // faza mienienia się
+        });
+      }
+    }
+  }
+}
+initBorderStars();
+
 function face(x, y) {
   ctx.fillStyle = "#222";
   ctx.fillRect(x + 4, y + 6, 3, 3);
@@ -53,6 +77,8 @@ const LINES = {
       at: 0,
       body: "#f7d02c",
       dark: "#8b6914",
+      // Kolory dla ramki
+      border: ["#f7d02c", "#fbe18c", "#fff"], 
       head(x, y) {
         ctx.fillStyle = this.body;
         ctx.fillRect(x + 2, y - 6, 5, 7);
@@ -82,6 +108,8 @@ const LINES = {
       at: 8,
       body: "#f0a030",
       dark: "#8b4a14",
+      // Kolory dla ramki
+      border: ["#f0a030", "#f4b96e", "#fff"],
       head(x, y) {
         ctx.fillStyle = this.body;
         ctx.fillRect(x + 1, y - 8, 6, 9);
@@ -107,259 +135,70 @@ const LINES = {
       },
     },
   ],
+  // ... reszta Pokemonów bez zmian (dodadzą się kolory border w applyStage) ...
   bulbasaur: [
-    {
-      name: "Bulbasaur",
-      at: 0,
-      body: "#74c9a0",
-      dark: "#3d8b6e",
-      head(x, y) {
-        face(x, y);
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 2, y + 12, 3, 3);
-        ctx.fillRect(x + SIZE - 7, y + 11, 3, 3);
-      },
-      bodyMark(x, y, i) {
-        if (i % 2 === 0) {
-          ctx.fillStyle = this.dark;
-          ctx.fillRect(x + 4, y + 4, 4, 4);
-        }
-        if (i === 1) {
-          ctx.fillStyle = "#5c3d7a";
-          ctx.fillRect(x + 4, y - 8, 11, 10);
-          ctx.fillStyle = "#2d6b3a";
-          ctx.fillRect(x + 8, y - 10, 3, 4);
-        }
-      },
-      tail(x, y) {
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 4, y + 6, 10, 6);
-      },
-    },
-    {
-      name: "Ivysaur",
-      at: 5,
-      body: "#5cb88a",
-      dark: "#2f6e52",
-      head(x, y) {
-        face(x, y);
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 2, y + 12, 4, 3);
-        ctx.fillRect(x + SIZE - 8, y + 11, 4, 3);
-      },
-      bodyMark(x, y, i) {
-        if (i === 1) {
-          ctx.fillStyle = "#c0392b";
-          ctx.fillRect(x + 3, y - 10, 13, 12);
-          ctx.fillStyle = "#2d6b3a";
-          ctx.fillRect(x + 2, y - 4, 4, 6);
-          ctx.fillRect(x + 13, y - 4, 4, 6);
-        }
-      },
-      tail(x, y) {
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 3, y + 5, 12, 7);
-      },
-    },
-    {
-      name: "Venusaur",
-      at: 12,
-      body: "#3fa06e",
-      dark: "#245c40",
-      head(x, y) {
-        face(x, y);
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 1, y + 11, 5, 4);
-        ctx.fillRect(x + SIZE - 7, y + 11, 5, 4);
-      },
-      bodyMark(x, y, i) {
-        if (i === 1) {
-          ctx.fillStyle = "#8e44ad";
-          ctx.fillRect(x + 1, y - 12, 17, 14);
-          ctx.fillStyle = "#c0392b";
-          ctx.fillRect(x + 6, y - 8, 7, 7);
-          ctx.fillStyle = "#2d6b3a";
-          ctx.fillRect(x + 1, y - 2, 5, 6);
-          ctx.fillRect(x + 13, y - 2, 5, 6);
-        }
-      },
-      tail(x, y) {
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 2, y + 4, 14, 8);
-      },
-    },
+    { name: "Bulbasaur", at: 0, body: "#74c9a0", dark: "#3d8b6e", border: ["#74c9a0", "#a8ddc4", "#fff"], /*... head, bodyMark, tail ...*/},
+    { name: "Ivysaur", at: 5, body: "#5cb88a", dark: "#2f6e52", border: ["#5cb88a", "#96d2b5", "#fff"], /*... head, bodyMark, tail ...*/},
+    { name: "Venusaur", at: 12, body: "#3fa06e", dark: "#245c40", border: ["#3fa06e", "#84c3a5", "#fff"], /*... head, bodyMark, tail ...*/}
   ],
   charmander: [
-    {
-      name: "Charmander",
-      at: 0,
-      body: "#f08030",
-      dark: "#c45c18",
-      head(x, y) {
-        face(x, y);
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 6, y + 11, 7, 4);
-      },
-      bodyMark(x, y, i) {
-        if (i === 1) {
-          ctx.fillStyle = "#eee";
-          ctx.fillRect(x + 4, y + 6, 11, 8);
-        }
-      },
-      tail(x, y) {
-        ctx.fillStyle = "#f8d030";
-        ctx.fillRect(x + 6, y - 4, 6, 6);
-        ctx.fillStyle = "#e74c3c";
-        ctx.fillRect(x + 8, y - 6, 3, 4);
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 7, y + 4, 5, 8);
-      },
-    },
-    {
-      name: "Charmeleon",
-      at: 5,
-      body: "#e06020",
-      dark: "#a04010",
-      head(x, y) {
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 7, y - 4, 5, 5);
-        face(x, y);
-        ctx.fillStyle = "#eee";
-        ctx.fillRect(x + 5, y + 11, 9, 4);
-      },
-      bodyMark(x, y, i) {
-        if (i === 1) {
-          ctx.fillStyle = "#eee";
-          ctx.fillRect(x + 3, y + 5, 13, 9);
-        }
-      },
-      tail(x, y) {
-        ctx.fillStyle = "#f8d030";
-        ctx.fillRect(x + 5, y - 6, 8, 7);
-        ctx.fillStyle = "#e74c3c";
-        ctx.fillRect(x + 7, y - 8, 4, 5);
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 6, y + 3, 6, 10);
-      },
-    },
-    {
-      name: "Charizard",
-      at: 12,
-      body: "#d35400",
-      dark: "#8e2c00",
-      head(x, y) {
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 3, y - 6, 4, 7);
-        ctx.fillRect(x + SIZE - 8, y - 6, 4, 7);
-        face(x, y);
-        ctx.fillStyle = "#eee";
-        ctx.fillRect(x + 4, y + 11, 11, 4);
-      },
-      bodyMark(x, y, i) {
-        if (i === 1) {
-          ctx.fillStyle = "#eee";
-          ctx.fillRect(x + 3, y + 4, 13, 10);
-        }
-        if (i === 2 || i === 3) {
-          ctx.fillStyle = "#5dade2";
-          ctx.fillRect(x - 4, y + 2, 5, 12);
-          ctx.fillRect(x + SIZE - 2, y + 2, 5, 12);
-        }
-      },
-      tail(x, y) {
-        ctx.fillStyle = "#f8d030";
-        ctx.fillRect(x + 4, y - 8, 10, 8);
-        ctx.fillStyle = "#e74c3c";
-        ctx.fillRect(x + 7, y - 10, 5, 6);
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 6, y + 2, 7, 12);
-      },
-    },
+    { name: "Charmander", at: 0, body: "#f08030", dark: "#c45c18", border: ["#f08030", "#f4ac76", "#fff"], /*... head, bodyMark, tail ...*/},
+    { name: "Charmeleon", at: 5, body: "#e06020", dark: "#a04010", border: ["#e06020", "#ea9361", "#fff"], /*... head, bodyMark, tail ...*/},
+    { name: "Charizard", at: 12, body: "#d35400", dark: "#8e2c00", border: ["#d35400", "#e08953", "#fff"], /*... head, bodyMark, tail ...*/}
   ],
   squirtle: [
-    {
-      name: "Squirtle",
-      at: 0,
-      body: "#5dade2",
-      dark: "#2e86c1",
-      head(x, y) {
-        face(x, y);
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 5, y + 12, 9, 3);
-      },
-      bodyMark(x, y) {
-        ctx.fillStyle = "#d5a06a";
-        ctx.fillRect(x + 2, y + 2, SIZE - 5, SIZE - 5);
-        ctx.fillStyle = "#8b5a2b";
-        ctx.fillRect(x + SIZE / 2 - 1, y + 2, 2, SIZE - 5);
-        ctx.fillRect(x + 2, y + SIZE / 2 - 1, SIZE - 5, 2);
-      },
-      tail(x, y) {
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 6, y + 4, 8, 8);
-        ctx.fillStyle = "#eee";
-        ctx.fillRect(x + 12, y + 6, 4, 4);
-      },
-    },
-    {
-      name: "Wartortle",
-      at: 5,
-      body: "#3498db",
-      dark: "#1a6fa3",
-      head(x, y) {
-        ctx.fillStyle = "#eee";
-        ctx.fillRect(x + 1, y - 4, 5, 8);
-        ctx.fillRect(x + SIZE - 7, y - 4, 5, 8);
-        face(x, y);
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 5, y + 12, 9, 3);
-      },
-      bodyMark(x, y) {
-        ctx.fillStyle = "#b87333";
-        ctx.fillRect(x + 2, y + 2, SIZE - 5, SIZE - 5);
-        ctx.fillStyle = "#6b3f1a";
-        ctx.fillRect(x + SIZE / 2 - 1, y + 2, 2, SIZE - 5);
-        ctx.fillRect(x + 2, y + SIZE / 2 - 1, SIZE - 5, 2);
-      },
-      tail(x, y) {
-        ctx.fillStyle = "#eee";
-        ctx.fillRect(x + 4, y + 2, 12, 12);
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 7, y + 5, 6, 6);
-      },
-    },
-    {
-      name: "Blastoise",
-      at: 12,
-      body: "#2471a3",
-      dark: "#1a5276",
-      head(x, y) {
-        face(x, y);
-        ctx.fillStyle = "#95a5a6";
-        ctx.fillRect(x + 2, y + 1, 4, 5);
-        ctx.fillRect(x + SIZE - 7, y + 1, 4, 5);
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 5, y + 12, 9, 3);
-      },
-      bodyMark(x, y, i) {
-        ctx.fillStyle = "#7f8c8d";
-        ctx.fillRect(x + 2, y + 2, SIZE - 5, SIZE - 5);
-        ctx.fillStyle = "#566573";
-        ctx.fillRect(x + SIZE / 2 - 1, y + 2, 2, SIZE - 5);
-        ctx.fillRect(x + 2, y + SIZE / 2 - 1, SIZE - 5, 2);
-        if (i === 1) {
-          ctx.fillStyle = "#95a5a6";
-          ctx.fillRect(x - 3, y + 4, 5, 8);
-          ctx.fillRect(x + SIZE - 3, y + 4, 5, 8);
-        }
-      },
-      tail(x, y) {
-        ctx.fillStyle = this.dark;
-        ctx.fillRect(x + 5, y + 4, 10, 9);
-      },
-    },
+    { name: "Squirtle", at: 0, body: "#5dade2", dark: "#2e86c1", border: ["#5dade2", "#95caec", "#fff"], /*... head, bodyMark, tail ...*/},
+    { name: "Wartortle", at: 5, body: "#3498db", dark: "#1a6fa3", border: ["#3498db", "#7bbce7", "#fff"], /*... head, bodyMark, tail ...*/},
+    { name: "Blastoise", at: 12, body: "#2471a3", dark: "#1a5276", border: ["#2471a3", "#6ba1c5", "#fff"], /*... head, bodyMark, tail ...*/}
   ],
 };
+
+// Funkcje rysujące (dodano `border` do definicji)
+(function() {
+  for(let key in LINES) {
+    LINES[key].forEach(p => {
+      if(!p.head) {
+        // To tylko uproszczenie dla przykładu, w prawdziwym kodzie
+        // musisz skopiować całe definicje head/bodyMark/tail
+        // z oryginalnego skryptu, dodając tylko border.
+      }
+    });
+  }
+})();
+// Odtworzenie pełnych definicji z oryginalnego skryptu, z dodaniem pola `border`:
+LINES.pikachu[0].head = function(x, y) { ctx.fillStyle = this.body; ctx.fillRect(x + 2, y - 6, 5, 7); ctx.fillRect(x + SIZE - 8, y - 6, 5, 7); ctx.fillStyle = "#222"; ctx.fillRect(x + 2, y - 6, 5, 3); ctx.fillRect(x + SIZE - 8, y - 6, 5, 3); face(x, y); ctx.fillStyle = "#e74c3c"; ctx.fillRect(x + 1, y + 11, 4, 4); ctx.fillRect(x + SIZE - 6, y + 11, 4, 4); };
+LINES.pikachu[0].bodyMark = function(x, y, i) { if (i % 3 === 0) { ctx.fillStyle = this.dark; ctx.fillRect(x + 2, y + SIZE / 2 - 1, SIZE - 5, 2); } };
+LINES.pikachu[0].tail = function(x, y) { ctx.fillStyle = this.dark; ctx.fillRect(x + SIZE - 6, y + 2, 5, 5); ctx.fillRect(x + 2, y + SIZE - 8, 8, 5); };
+LINES.pikachu[1].head = function(x, y) { ctx.fillStyle = this.body; ctx.fillRect(x + 1, y - 8, 6, 9); ctx.fillRect(x + SIZE - 8, y - 8, 6, 9); ctx.fillStyle = "#f5d76e"; ctx.fillRect(x + 2, y - 8, 4, 4); ctx.fillRect(x + SIZE - 7, y - 8, 4, 4); face(x, y); ctx.fillStyle = "#e74c3c"; ctx.fillRect(x + 1, y + 11, 4, 4); ctx.fillRect(x + SIZE - 6, y + 11, 4, 4); };
+LINES.pikachu[1].bodyMark = function(x, y, i) { if (i % 2 === 0) { ctx.fillStyle = "#f5d76e"; ctx.fillRect(x + 3, y + 4, SIZE - 7, SIZE - 9); } };
+LINES.pikachu[1].tail = function(x, y) { ctx.fillStyle = this.dark; ctx.fillRect(x + 2, y + 2, 14, 4); ctx.fillRect(x + 10, y + 6, 6, 8); };
+LINES.bulbasaur[0].head = function(x, y) { face(x, y); ctx.fillStyle = this.dark; ctx.fillRect(x + 2, y + 12, 3, 3); ctx.fillRect(x + SIZE - 7, y + 11, 3, 3); };
+LINES.bulbasaur[0].bodyMark = function(x, y, i) { if (i % 2 === 0) { ctx.fillStyle = this.dark; ctx.fillRect(x + 4, y + 4, 4, 4); } if (i === 1) { ctx.fillStyle = "#5c3d7a"; ctx.fillRect(x + 4, y - 8, 11, 10); ctx.fillStyle = "#2d6b3a"; ctx.fillRect(x + 8, y - 10, 3, 4); } };
+LINES.bulbasaur[0].tail = function(x, y) { ctx.fillStyle = this.dark; ctx.fillRect(x + 4, y + 6, 10, 6); };
+LINES.bulbasaur[1].head = function(x, y) { face(x, y); ctx.fillStyle = this.dark; ctx.fillRect(x + 2, y + 12, 4, 3); ctx.fillRect(x + SIZE - 8, y + 11, 4, 3); };
+LINES.bulbasaur[1].bodyMark = function(x, y, i) { if (i === 1) { ctx.fillStyle = "#c0392b"; ctx.fillRect(x + 3, y - 10, 13, 12); ctx.fillStyle = "#2d6b3a"; ctx.fillRect(x + 2, y - 4, 4, 6); ctx.fillRect(x + 13, y - 4, 4, 6); } };
+LINES.bulbasaur[1].tail = function(x, y) { ctx.fillStyle = this.dark; ctx.fillRect(x + 3, y + 5, 12, 7); };
+LINES.bulbasaur[2].head = function(x, y) { face(x, y); ctx.fillStyle = this.dark; ctx.fillRect(x + 1, y + 11, 5, 4); ctx.fillRect(x + SIZE - 7, y + 11, 5, 4); };
+LINES.bulbasaur[2].bodyMark = function(x, y, i) { if (i === 1) { ctx.fillStyle = "#8e44ad"; ctx.fillRect(x + 1, y - 12, 17, 14); ctx.fillStyle = "#c0392b"; ctx.fillRect(x + 6, y - 8, 7, 7); ctx.fillStyle = "#2d6b3a"; ctx.fillRect(x + 1, y - 2, 5, 6); ctx.fillRect(x + 13, y - 2, 5, 6); } };
+LINES.bulbasaur[2].tail = function(x, y) { ctx.fillStyle = this.dark; ctx.fillRect(x + 2, y + 4, 14, 8); };
+LINES.charmander[0].head = function(x, y) { face(x, y); ctx.fillStyle = this.dark; ctx.fillRect(x + 6, y + 11, 7, 4); };
+LINES.charmander[0].bodyMark = function(x, y, i) { if (i === 1) { ctx.fillStyle = "#eee"; ctx.fillRect(x + 4, y + 6, 11, 8); } };
+LINES.charmander[0].tail = function(x, y) { ctx.fillStyle = "#f8d030"; ctx.fillRect(x + 6, y - 4, 6, 6); ctx.fillStyle = "#e74c3c"; ctx.fillRect(x + 8, y - 6, 3, 4); ctx.fillStyle = this.dark; ctx.fillRect(x + 7, y + 4, 5, 8); };
+LINES.charmander[1].head = function(x, y) { ctx.fillStyle = this.dark; ctx.fillRect(x + 7, y - 4, 5, 5); face(x, y); ctx.fillStyle = "#eee"; ctx.fillRect(x + 5, y + 11, 9, 4); };
+LINES.charmander[1].bodyMark = function(x, y, i) { if (i === 1) { ctx.fillStyle = "#eee"; ctx.fillRect(x + 3, y + 5, 13, 9); } };
+LINES.charmander[1].tail = function(x, y) { ctx.fillStyle = "#f8d030"; ctx.fillRect(x + 5, y - 6, 8, 7); ctx.fillStyle = "#e74c3c"; ctx.fillRect(x + 7, y - 8, 4, 5); ctx.fillStyle = this.dark; ctx.fillRect(x + 6, y + 3, 6, 10); };
+LINES.charmander[2].head = function(x, y) { ctx.fillStyle = this.dark; ctx.fillRect(x + 3, y - 6, 4, 7); ctx.fillRect(x + SIZE - 8, y - 6, 4, 7); face(x, y); ctx.fillStyle = "#eee"; ctx.fillRect(x + 4, y + 11, 11, 4); };
+LINES.charmander[2].bodyMark = function(x, y, i) { if (i === 1) { ctx.fillStyle = "#eee"; ctx.fillRect(x + 3, y + 4, 13, 10); } if (i === 2 || i === 3) { ctx.fillStyle = "#5dade2"; ctx.fillRect(x - 4, y + 2, 5, 12); ctx.fillRect(x + SIZE - 2, y + 2, 5, 12); } };
+LINES.charmander[2].tail = function(x, y) { ctx.fillStyle = "#f8d030"; ctx.fillRect(x + 4, y - 8, 10, 8); ctx.fillStyle = "#e74c3c"; ctx.fillRect(x + 7, y - 10, 5, 6); ctx.fillStyle = this.dark; ctx.fillRect(x + 6, y + 2, 7, 12); };
+LINES.squirtle[0].head = function(x, y) { face(x, y); ctx.fillStyle = this.dark; ctx.fillRect(x + 5, y + 12, 9, 3); };
+LINES.squirtle[0].bodyMark = function(x, y) { ctx.fillStyle = "#d5a06a"; ctx.fillRect(x + 2, y + 2, SIZE - 5, SIZE - 5); ctx.fillStyle = "#8b5a2b"; ctx.fillRect(x + SIZE / 2 - 1, y + 2, 2, SIZE - 5); ctx.fillRect(x + 2, y + SIZE / 2 - 1, SIZE - 5, 2); };
+LINES.squirtle[0].tail = function(x, y) { ctx.fillStyle = this.dark; ctx.fillRect(x + 6, y + 4, 8, 8); ctx.fillStyle = "#eee"; ctx.fillRect(x + 12, y + 6, 4, 4); };
+LINES.squirtle[1].head = function(x, y) { ctx.fillStyle = "#eee"; ctx.fillRect(x + 1, y - 4, 5, 8); ctx.fillRect(x + SIZE - 7, y - 4, 5, 8); face(x, y); ctx.fillStyle = this.dark; ctx.fillRect(x + 5, y + 12, 9, 3); };
+LINES.squirtle[1].bodyMark = function(x, y) { ctx.fillStyle = "#b87333"; ctx.fillRect(x + 2, y + 2, SIZE - 5, SIZE - 5); ctx.fillStyle = "#6b3f1a"; ctx.fillRect(x + SIZE / 2 - 1, y + 2, 2, SIZE - 5); ctx.fillRect(x + 2, y + SIZE / 2 - 1, SIZE - 5, 2); };
+LINES.squirtle[1].tail = function(x, y) { ctx.fillStyle = "#eee"; ctx.fillRect(x + 4, y + 2, 12, 12); ctx.fillStyle = this.dark; ctx.fillRect(x + 7, y + 5, 6, 6); };
+LINES.squirtle[2].head = function(x, y) { face(x, y); ctx.fillStyle = "#95a5a6"; ctx.fillRect(x + 2, y + 1, 4, 5); ctx.fillRect(x + SIZE - 7, y + 1, 4, 5); ctx.fillStyle = this.dark; ctx.fillRect(x + 5, y + 12, 9, 3); };
+LINES.squirtle[2].bodyMark = function(x, y, i) { ctx.fillStyle = "#7f8c8d"; ctx.fillRect(x + 2, y + 2, SIZE - 5, SIZE - 5); ctx.fillStyle = "#566573"; ctx.fillRect(x + SIZE / 2 - 1, y + 2, 2, SIZE - 5); ctx.fillRect(x + 2, y + SIZE / 2 - 1, SIZE - 5, 2); if (i === 1) { ctx.fillStyle = "#95a5a6"; ctx.fillRect(x - 3, y + 4, 5, 8); ctx.fillRect(x + SIZE - 3, y + 4, 5, 8); } };
+LINES.squirtle[2].tail = function(x, y) { ctx.fillStyle = this.dark; ctx.fillRect(x + 5, y + 4, 10, 9); };
 
 let snake, dir, nextDir, food, score, alive, playing, tick;
 let lineKey, mon, evoFlash;
@@ -560,35 +399,62 @@ function step() {
   pops = pops.filter((p) => p.life > 0);
 }
 
-function drawFence() {
-  for (let x = 0; x < COLS; x++) {
-    for (let y = 0; y < ROWS; y++) {
-      if (x >= PAD && x < COLS - PAD && y >= PAD && y < ROWS - PAD) continue;
-      const px = x * SIZE;
-      const py = y * SIZE;
-      const edge = x === 0 || y === 0 || x === COLS - 1 || y === ROWS - 1;
-      ctx.fillStyle = edge ? "#a67c52" : "#c4a574";
-      ctx.fillRect(px, py, SIZE, SIZE);
-      ctx.fillStyle = "#7a5235";
-      ctx.fillRect(px + 1, py + 5, SIZE - 2, 3);
-      ctx.fillRect(px + 1, py + 12, SIZE - 2, 3);
-      ctx.fillStyle = "#5c3d28";
-      if (x === 0 || x === COLS - 1) ctx.fillRect(px + 7, py + 1, 5, SIZE - 2);
-      if (y === 0 || y === ROWS - 1) ctx.fillRect(px + 1, py + 7, SIZE - 2, 5);
-      if ((x === 0 || x === COLS - 1) && (y === 0 || y === ROWS - 1)) {
-        ctx.fillStyle = "#d4b896";
-        ctx.fillRect(px + 3, py + 3, SIZE - 6, SIZE - 6);
-        ctx.fillStyle = "#c9a227";
-        ctx.fillRect(px + 7, py + 7, 6, 6);
-      }
-    }
+// Funkcja rysująca gwiazdkę
+function drawStar(x, y, radius, color, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.beginPath();
+  ctx.translate(x, y);
+  ctx.moveTo(0, 0 - radius);
+  for (let i = 0; i < 5; i++) {
+    ctx.rotate(Math.PI / 5);
+    ctx.lineTo(0, 0 - (radius * 0.4));
+    ctx.rotate(Math.PI / 5);
+    ctx.lineTo(0, 0 - radius);
   }
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  
+  // Brokatowy efekt (małe kropeczki)
+  if(Math.random() > 0.6) {
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(Math.random()*radius*2 - radius, Math.random()*radius*2 - radius, 1, 1);
+  }
+  ctx.restore();
+}
+
+// Funkcja rysująca nową, nierównomierną ramkę
+function drawBorder() {
+  if (!mon || !mon.border) return;
+  
+  const colors = mon.border;
+  const time = Date.now() * 0.003; // Czas dla mienienia się
+
+  borderStars.forEach(star => {
+    // Wybór koloru w zależności od skina i pozycji
+    const colorIndex = Math.floor((star.x + star.y) * 0.01) % colors.length;
+    const color = colors[colorIndex];
+    
+    // Efekt mienienia się (pulsowanie alpha)
+    const flicker = Math.sin(time + star.p * Math.PI * 2) * 0.2 + 0.8;
+    const alpha = Math.max(0.1, flicker);
+    
+    drawStar(star.x, star.y, star.size, color, alpha);
+  });
+}
+
+// Funkcja rysująca ogrodzenie (teraz pusta, zastąpiona przez drawBorder)
+function drawFence() {
+  // Stare ogrodzenie usunięte
 }
 
 function draw() {
-  ctx.fillStyle = "#2a2438";
+  ctx.fillStyle = "#000"; // Głęboka czerń wewnątrz
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  drawFence();
+  
+  // Rysuj nową ramkę na końcu, żeby była na wierzchu
+  
   if (!mon) return;
 
   const fx = food.x * SIZE;
@@ -631,9 +497,12 @@ function draw() {
     drawIcon(p.kind, p.x, p.y, 1.1 + (1 - t) * 0.4);
     ctx.globalAlpha = 1;
   }
+  
+  // Nowa ramka rysowana na wierzchu
+  drawBorder();
 
   if (evoFlash > 0) {
-    ctx.fillStyle = "#f1c40f";
+    ctx.fillStyle = "#fff";
     ctx.font = "22px monospace";
     ctx.textAlign = "center";
     ctx.fillText(`${mon.name}!`, canvas.width / 2, 40);
