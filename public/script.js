@@ -30,7 +30,6 @@ const DIAMOND_CHANCE = 0.15;
 const DIAMOND_LIFE = 50;
 
 const API_URL = "https://ey7s0l12je.execute-api.eu-central-1.amazonaws.com";
-
 const GEM_SVG = `<svg class="slot" viewBox="0 0 24 24" aria-hidden="true">
   <polygon points="12,2 22,9 18,22 6,22 2,9" fill="#5dade2" stroke="#1a5276" stroke-width="1.5"/>
   <polygon points="12,2 22,9 12,12 2,9" fill="#aed6f1"/>
