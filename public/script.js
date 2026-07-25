@@ -9,7 +9,7 @@ if (window.innerWidth <= 600) {
 }
 
 const SIZE = 20;
-const ctx = canvas.getContext("2d");
+let ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
 const formEl = document.getElementById("form");
 const gemSlotsEl = document.getElementById("gemSlots");
@@ -17,7 +17,6 @@ const heartSlotsEl = document.getElementById("heartSlots");
 const pickEl = document.getElementById("pokemon");
 const menuEl = document.getElementById("menu");
 const startBtn = document.getElementById("start");
-const buyHeartBtn = document.getElementById("buyHeart");
 const usernameInput = document.getElementById("usernameInput");
 const leaderboardList = document.getElementById("leaderboardList");
 
@@ -27,8 +26,10 @@ const PAD = 1;
 const HEART_COST = 3;
 const MAX_GEMS = 3;
 const MAX_HEARTS = 3;
-const DIAMOND_CHANCE = 0.12;
-const DIAMOND_CHANCE_FIRST = 0.22;
+const DIAMOND_CHANCE = 0.15;
+const DIAMOND_LIFE = 50;
+
+const API_URL = "https://ey7s0l12je.execute-api.eu-central-1.amazonaws.com";
 
 const GEM_SVG = `<svg class="slot" viewBox="0 0 24 24" aria-hidden="true">
   <polygon points="12,2 22,9 18,22 6,22 2,9" fill="#5dade2" stroke="#1a5276" stroke-width="1.5"/>
@@ -42,7 +43,6 @@ const HEART_SVG = `<svg class="slot" viewBox="0 0 24 24" aria-hidden="true">
   <path d="M8 8c-.5 1 .2 2.2 1.2 2.5" fill="none" stroke="#f5b7b1" stroke-width="1.5" stroke-linecap="round"/>
 </svg>`;
 
-// --- Moduł Cookie & API (Przygotowane pod serwer) ---
 function setCookie(name, val) {
   document.cookie = name + "=" + encodeURIComponent(val) + ";path=/;max-age=31536000";
 }
@@ -52,21 +52,6 @@ function getCookie(name) {
   if (match) return decodeURIComponent(match[2]);
   return "";
 }
-
-function getAgentCountry() {
-  try {
-    const lang = navigator.language || "en-US";
-    const parts = lang.split("-");
-    if (parts.length > 1) return parts[1].toUpperCase();
-    if (lang === "pl") return "PL";
-    return "UN";
-  } catch (e) {
-    return "UN";
-  }
-}
-
-// Symulacja zapytań HTTP
-const API_URL = "https://ey7s0l12je.execute-api.eu-central-1.amazonaws.com";
 
 async function apiFetchLeaderboard() {
   try {
@@ -86,11 +71,9 @@ async function apiSubmitScore(entry) {
       body: JSON.stringify(entry)
     });
     refreshLeaderboardUI();
-  } catch (e) {
-  }
+  } catch (e) {}
 }
 
-// Inicjalizacja nazwy użytkownika
 let currentUsername = getCookie("snake_username") || "Gracz_" + Math.floor(Math.random() * 999);
 usernameInput.value = currentUsername;
 
@@ -98,26 +81,6 @@ usernameInput.addEventListener("input", (e) => {
   currentUsername = e.target.value.trim() || "Gracz";
   setCookie("snake_username", currentUsername);
 });
-
-async function refreshLeaderboardUI() {
-  const lb = await apiFetchLeaderboard();
-  leaderboardList.innerHTML = "";
-  if (lb.length === 0) {
-    leaderboardList.innerHTML = "<li>Brak wyników. Bądź pierwszy!</li>";
-    return;
-  }
-  lb.forEach((entry, idx) => {
-    const li = document.createElement("li");
-    li.innerHTML = `
-      <span>${idx + 1}. <span class="lb-user">${entry.username}</span></span>
-      <span class="lb-meta">[${entry.country}] ${entry.pokemon} <span class="lb-score">${entry.score}</span></span>
-    `;
-    leaderboardList.appendChild(li);
-  });
-}
-
-refreshLeaderboardUI();
-// --- Koniec modułu ---
 
 function buildSlots(el, svg, n) {
   el.innerHTML = svg.repeat(n);
@@ -213,7 +176,64 @@ LINES.squirtle[2].head = function(x, y) { face(x, y); ctx.fillStyle = "#95a5a6";
 LINES.squirtle[2].bodyMark = function(x, y, i) { ctx.fillStyle = "#7f8c8d"; ctx.fillRect(x + 2, y + 2, SIZE - 5, SIZE - 5); ctx.fillStyle = "#566573"; ctx.fillRect(x + SIZE / 2 - 1, y + 2, 2, SIZE - 5); ctx.fillRect(x + 2, y + SIZE / 2 - 1, SIZE - 5, 2); if (i === 1) { ctx.fillStyle = "#95a5a6"; ctx.fillRect(x - 3, y + 4, 5, 8); ctx.fillRect(x + SIZE - 3, y + 4, 5, 8); } };
 LINES.squirtle[2].tail = function(x, y) { ctx.fillStyle = this.dark; ctx.fillRect(x + 5, y + 4, 10, 9); };
 
-let snake, dir, nextDir, food, score, alive, playing, tick;
+const MON_MAP = {};
+for (const key in LINES) {
+  LINES[key].forEach(mon => {
+    MON_MAP[mon.name] = mon;
+  });
+}
+
+async function refreshLeaderboardUI() {
+  const lb = await apiFetchLeaderboard();
+  leaderboardList.innerHTML = "";
+  if (lb.length === 0) {
+    leaderboardList.innerHTML = "<li>Brak wyników. Bądź pierwszy!</li>";
+    return;
+  }
+  
+  const originalCtx = ctx;
+  
+  lb.forEach((entry, idx) => {
+    const li = document.createElement("li");
+    
+    const nameSpan = document.createElement("span");
+    nameSpan.innerHTML = `${idx + 1}. <span class="lb-user">${entry.username}</span>`;
+    
+    const metaSpan = document.createElement("span");
+    metaSpan.className = "lb-meta";
+    
+    const canvasIcon = document.createElement("canvas");
+    canvasIcon.width = SIZE;
+    canvasIcon.height = SIZE;
+    canvasIcon.className = "lb-icon";
+    
+    ctx = canvasIcon.getContext("2d");
+    const mon = MON_MAP[entry.pokemon];
+    if (mon && mon.head) {
+      ctx.fillStyle = mon.body;
+      ctx.fillRect(0, 0, SIZE - 1, SIZE - 1);
+      mon.head(0, 0);
+    } else {
+      ctx.fillStyle = "#555";
+      ctx.fillRect(0, 0, SIZE - 1, SIZE - 1);
+    }
+    
+    const scoreSpan = document.createElement("span");
+    scoreSpan.className = "lb-score";
+    scoreSpan.textContent = entry.score;
+    
+    metaSpan.appendChild(canvasIcon);
+    metaSpan.appendChild(scoreSpan);
+    
+    li.appendChild(nameSpan);
+    li.appendChild(metaSpan);
+    leaderboardList.appendChild(li);
+  });
+  
+  ctx = originalCtx;
+}
+
+let snake, dir, nextDir, food, diamond, score, alive, playing, tick;
 let lineKey, mon, evoFlash;
 let gems = 0;
 let hearts = 0;
@@ -321,12 +341,36 @@ function buyHeart() {
   updateHUD();
 }
 
+function getFreePos() {
+  let p;
+  do {
+    p = {
+      x: PAD + ((Math.random() * (COLS - PAD * 2)) | 0),
+      y: PAD + ((Math.random() * (ROWS - PAD * 2)) | 0),
+    };
+  } while (
+    snake.some((s) => s.x === p.x && s.y === p.y) ||
+    (food && food.x === p.x && food.y === p.y) ||
+    (diamond && diamond.x === p.x && diamond.y === p.y)
+  );
+  return p;
+}
+
+function spawnFood() {
+  return { ...getFreePos(), ball: pickBall() };
+}
+
+function spawnDiamond() {
+  return { ...getFreePos(), life: DIAMOND_LIFE };
+}
+
 function reset() {
   snake = [{ x: (COLS / 2) | 0, y: (ROWS / 2) | 0 }];
   dir = nextDir = { x: 1, y: 0 };
-  food = spawn();
+  food = spawnFood();
+  diamond = null;
   score = 0;
-  hearts = 0;
+  hearts = 1;
   gems = 0;
   alive = true;
   evoFlash = 0;
@@ -353,21 +397,6 @@ function startGame() {
 
 startBtn.addEventListener("click", startGame);
 
-function spawn() {
-  let p;
-  do {
-    p = {
-      x: PAD + ((Math.random() * (COLS - PAD * 2)) | 0),
-      y: PAD + ((Math.random() * (ROWS - PAD * 2)) | 0),
-    };
-  } while (snake.some((s) => s.x === p.x && s.y === p.y));
-  const chance = hearts === 0 ? DIAMOND_CHANCE_FIRST : DIAMOND_CHANCE;
-  if (Math.random() < chance && gems < MAX_GEMS) {
-    return { ...p, kind: "diamond" };
-  }
-  return { ...p, kind: "ball", ball: pickBall() };
-}
-
 function revive() {
   hearts--;
   snake = [{ x: (COLS / 2) | 0, y: (ROWS / 2) | 0 }];
@@ -381,7 +410,6 @@ function handleGameOver() {
     scoreSubmitted = true;
     apiSubmitScore({
       username: currentUsername,
-      country: getAgentCountry(),
       score: score,
       pokemon: mon.name,
       date: Date.now()
@@ -405,22 +433,42 @@ function step() {
   }
 
   snake.unshift(head);
-  if (head.x === food.x && head.y === food.y) {
-    if (food.kind === "diamond") {
-      if (gems < MAX_GEMS) {
-        gems++;
-        pulseSlot(gemSlotNodes, gems - 1);
-        addPop("gem", food.x, food.y);
-      }
-    } else {
-      score += food.ball.points;
+  let ateFood = false;
+
+  if (diamond && head.x === diamond.x && head.y === diamond.y) {
+    if (gems < MAX_GEMS) {
+      gems++;
+      pulseSlot(gemSlotNodes, gems - 1);
+      addPop("gem", diamond.x, diamond.y);
     }
+    if (gems >= HEART_COST && hearts < MAX_HEARTS) {
+      buyHeart();
+    }
+    diamond = null;
+    updateHUD();
+  }
+
+  if (head.x === food.x && head.y === food.y) {
+    score += food.ball.points;
     applyStage();
     updateHUD();
-    food = spawn();
-  } else {
+    food = spawnFood();
+    ateFood = true;
+    
+    if (!diamond && Math.random() < DIAMOND_CHANCE && gems < MAX_GEMS) {
+      diamond = spawnDiamond();
+    }
+  }
+
+  if (!ateFood) {
     snake.pop();
   }
+
+  if (diamond) {
+    diamond.life--;
+    if (diamond.life <= 0) diamond = null;
+  }
+
   if (evoFlash > 0) evoFlash--;
   for (const p of pops) {
     p.y -= 2;
@@ -475,21 +523,23 @@ function draw() {
 
   const fx = food.x * SIZE;
   const fy = food.y * SIZE;
-  if (food.kind === "diamond") {
-    drawIcon("gem", fx + SIZE / 2, fy + SIZE / 2, 0.85);
-  } else {
-    const ball = food.ball;
-    ctx.fillStyle = ball.top;
-    ctx.fillRect(fx, fy, SIZE - 1, (SIZE - 1) / 2);
-    ctx.fillStyle = "#eee";
-    ctx.fillRect(fx, fy + (SIZE - 1) / 2, SIZE - 1, (SIZE - 1) / 2);
-    if (ball.stripe) {
-      ctx.fillStyle = ball.stripe;
-      ctx.fillRect(fx + 2, fy + 2, SIZE - 5, 3);
+  const ball = food.ball;
+  ctx.fillStyle = ball.top;
+  ctx.fillRect(fx, fy, SIZE - 1, (SIZE - 1) / 2);
+  ctx.fillStyle = "#eee";
+  ctx.fillRect(fx, fy + (SIZE - 1) / 2, SIZE - 1, (SIZE - 1) / 2);
+  if (ball.stripe) {
+    ctx.fillStyle = ball.stripe;
+    ctx.fillRect(fx + 2, fy + 2, SIZE - 5, 3);
+  }
+  ctx.fillStyle = "#111";
+  ctx.fillRect(fx, fy + SIZE / 2 - 1, SIZE - 1, 2);
+  ctx.fillRect(fx + SIZE / 2 - 2, fy + SIZE / 2 - 2, 4, 4);
+
+  if (diamond) {
+    if (diamond.life > 15 || diamond.life % 4 > 1) {
+      drawIcon("gem", diamond.x * SIZE + SIZE / 2, diamond.y * SIZE + SIZE / 2, 0.85);
     }
-    ctx.fillStyle = "#111";
-    ctx.fillRect(fx, fy + SIZE / 2 - 1, SIZE - 1, 2);
-    ctx.fillRect(fx + SIZE / 2 - 2, fy + SIZE / 2 - 2, 4, 4);
   }
 
   snake.forEach((s, i) => {
@@ -544,11 +594,6 @@ document.addEventListener("keydown", (e) => {
     ArrowLeft: { x: -1, y: 0 },
     ArrowRight: { x: 1, y: 0 },
   };
-  if ((e.key === "h" || e.key === "H") && alive) {
-    e.preventDefault();
-    buyHeart();
-    return;
-  }
   if (e.key === " " && !alive) {
     e.preventDefault();
     showMenu();
@@ -559,10 +604,6 @@ document.addEventListener("keydown", (e) => {
     e.preventDefault();
     setDir(d);
   }
-});
-
-buyHeartBtn.addEventListener("click", () => {
-  if (playing && alive) buyHeart();
 });
 
 let touchX = 0;
@@ -607,6 +648,7 @@ lineKey = pickEl.value;
 reset();
 playing = false;
 draw();
+refreshLeaderboardUI();
 tick = setInterval(() => {
   step();
   draw();

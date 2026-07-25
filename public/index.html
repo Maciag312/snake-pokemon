@@ -137,15 +137,17 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 4px;
       padding: 8px;
-      max-height: 160px;
+      max-height: 220px;
       overflow-y: auto;
     }
     #leaderboard h3 { font-size: 14px; margin-bottom: 6px; color: #a89fbe; border-bottom: 1px solid #333; padding-bottom: 4px;}
     #leaderboardList { list-style: none; padding: 0; margin: 0; font-size: 12px; }
-    #leaderboardList li { display: flex; justify-content: space-between; padding: 2px 0; }
+    #leaderboardList li { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+    #leaderboardList li:last-child { border-bottom: none; }
     .lb-user { font-weight: bold; color: #fff; }
-    .lb-score { color: #5dade2; font-weight: bold; }
-    .lb-meta { color: #888; font-size: 10px; display: flex; gap: 4px; align-items: center; }
+    .lb-score { color: #5dade2; font-weight: bold; margin-left: 6px; }
+    .lb-meta { display: flex; gap: 4px; align-items: center; }
+    .lb-icon { width: 20px; height: 20px; image-rendering: pixelated; border-radius: 2px; }
 
     @media (max-width: 600px) {
       .bar {
@@ -176,10 +178,10 @@
         </div>
         
         <button id="start" type="button">Start Game</button>
-        <p id="hint">Swipe / strzałki · H = serce · ewolucja 5 / 12</p>
+        <p id="hint">Swipe / strzałki · ewolucja 5 / 12</p>
         
         <div id="leaderboard">
-          <h3>Top Ranking</h3>
+          <h3>Top 15 Ranking</h3>
           <ul id="leaderboardList">
             <li>Wczytywanie...</li>
           </ul>
@@ -196,7 +198,6 @@
       <span class="stat" id="heartStat" title="Serca">
         <span class="slots" id="heartSlots"></span>
       </span>
-      <button id="buyHeart" type="button" class="stat" title="Kup serce">♥ kup</button>
     </div>
   </div>
   <script src="script.js"></script>
