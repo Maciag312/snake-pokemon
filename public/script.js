@@ -952,6 +952,7 @@ function step() {
     speedBoostTimeLeft--;
     if (speedBoostTimeLeft <= 0) {
       speedBoostActive = false;
+      updateHUD();
     }
   }
 
