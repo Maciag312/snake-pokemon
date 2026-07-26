@@ -30,8 +30,10 @@ const PAD = 1;
 const HEART_COST = 3;
 const MAX_GEMS = 3;
 const MAX_HEARTS = 3;
-const DIAMOND_CHANCE = 0.15;
+const DIAMOND_CHANCE = 0.075;
 const DIAMOND_LIFE = 50;
+const POWER_ORB_CHANCE = 0.035;
+const POWER_ORB_LIFE = 60;
 
 const API_URL = "https://ey7s0l12je.execute-api.eu-central-1.amazonaws.com";
 const GEM_SVG = `<svg class="slot" viewBox="0 0 24 24" aria-hidden="true">
@@ -217,49 +219,97 @@ document.querySelectorAll(".char-option").forEach(btn => {
 async function refreshLeaderboardUI() {
   const lb = await apiFetchLeaderboard();
   leaderboardList.innerHTML = "";
+  const podiumEl = document.getElementById("podiumContainer");
+  
   if (lb.length === 0) {
+    if (podiumEl) podiumEl.classList.add("hidden");
     leaderboardList.innerHTML = "<li>Brak wyników. Bądź pierwszy!</li>";
     return;
   }
   
   const originalCtx = ctx;
   
-  lb.forEach((entry, idx) => {
-    const li = document.createElement("li");
+  // Render podium (top 3)
+  if (podiumEl) {
+    podiumEl.classList.remove("hidden");
     
-    const nameSpan = document.createElement("span");
-    nameSpan.innerHTML = `${idx + 1}. <span class="lb-user">${entry.username}</span>`;
+    const renderPodiumStep = (num, entry) => {
+      const userEl = document.getElementById("podiumUser" + num);
+      const scoreEl = document.getElementById("podiumScore" + num);
+      const canvasEl = document.getElementById("podiumCanvas" + num);
+      
+      if (entry) {
+        userEl.textContent = entry.username;
+        scoreEl.textContent = entry.score;
+        
+        ctx = canvasEl.getContext("2d");
+        ctx.clearRect(0, 0, SIZE, SIZE);
+        const mon = MON_MAP[entry.pokemon];
+        if (mon && mon.head) {
+          ctx.fillStyle = mon.body;
+          ctx.fillRect(0, 0, SIZE - 1, SIZE - 1);
+          mon.head(0, 0);
+        } else {
+          ctx.fillStyle = "#555";
+          ctx.fillRect(0, 0, SIZE - 1, SIZE - 1);
+        }
+      } else {
+        userEl.textContent = "---";
+        scoreEl.textContent = "---";
+        ctx = canvasEl.getContext("2d");
+        ctx.clearRect(0, 0, SIZE, SIZE);
+        ctx.fillStyle = "#222";
+        ctx.fillRect(0, 0, SIZE - 1, SIZE - 1);
+      }
+    };
     
-    const metaSpan = document.createElement("span");
-    metaSpan.className = "lb-meta";
-    
-    const canvasIcon = document.createElement("canvas");
-    canvasIcon.width = SIZE;
-    canvasIcon.height = SIZE;
-    canvasIcon.className = "lb-icon";
-    
-    ctx = canvasIcon.getContext("2d");
-    const mon = MON_MAP[entry.pokemon];
-    if (mon && mon.head) {
-      ctx.fillStyle = mon.body;
-      ctx.fillRect(0, 0, SIZE - 1, SIZE - 1);
-      mon.head(0, 0);
-    } else {
-      ctx.fillStyle = "#555";
-      ctx.fillRect(0, 0, SIZE - 1, SIZE - 1);
-    }
-    
-    const scoreSpan = document.createElement("span");
-    scoreSpan.className = "lb-score";
-    scoreSpan.textContent = entry.score;
-    
-    metaSpan.appendChild(canvasIcon);
-    metaSpan.appendChild(scoreSpan);
-    
-    li.appendChild(nameSpan);
-    li.appendChild(metaSpan);
-    leaderboardList.appendChild(li);
-  });
+    renderPodiumStep(1, lb[0]);
+    renderPodiumStep(2, lb[1]);
+    renderPodiumStep(3, lb[2]);
+  }
+  
+  // Render rest of the leaderboard (ranks 4-100)
+  const listEntries = lb.slice(3, 100);
+  if (listEntries.length === 0) {
+    leaderboardList.innerHTML = "<li style='justify-content: center; opacity: 0.6;'>Zagraj, aby zapełnić resztę rankingu!</li>";
+  } else {
+    listEntries.forEach((entry, idx) => {
+      const li = document.createElement("li");
+      
+      const nameSpan = document.createElement("span");
+      nameSpan.innerHTML = `${idx + 4}. <span class="lb-user">${entry.username}</span>`;
+      
+      const metaSpan = document.createElement("span");
+      metaSpan.className = "lb-meta";
+      
+      const canvasIcon = document.createElement("canvas");
+      canvasIcon.width = SIZE;
+      canvasIcon.height = SIZE;
+      canvasIcon.className = "lb-icon";
+      
+      ctx = canvasIcon.getContext("2d");
+      const mon = MON_MAP[entry.pokemon];
+      if (mon && mon.head) {
+        ctx.fillStyle = mon.body;
+        ctx.fillRect(0, 0, SIZE - 1, SIZE - 1);
+        mon.head(0, 0);
+      } else {
+        ctx.fillStyle = "#555";
+        ctx.fillRect(0, 0, SIZE - 1, SIZE - 1);
+      }
+      
+      const scoreSpan = document.createElement("span");
+      scoreSpan.className = "lb-score";
+      scoreSpan.textContent = entry.score;
+      
+      metaSpan.appendChild(canvasIcon);
+      metaSpan.appendChild(scoreSpan);
+      
+      li.appendChild(nameSpan);
+      li.appendChild(metaSpan);
+      leaderboardList.appendChild(li);
+    });
+  }
   
   ctx = originalCtx;
 }
@@ -278,6 +328,9 @@ let fireballs = [];
 let extraFoods = [];
 let abilityActive = false;
 let shieldTimeLeft = 0;
+let speedBoostActive = false;
+let speedBoostTimeLeft = 0;
+let powerOrb = null;
 let screenShake = 0;
 
 function triggerAbility() {
@@ -302,12 +355,13 @@ function triggerAbility() {
     }
   } else if (lineKey === "bulbasaur") {
     screenShake = 4;
-    const count = (mon && mon.name === "Venusaur") 
-      ? (Math.floor(Math.random() * 3) + 3) // 3 to 5
-      : (Math.floor(Math.random() * 3) + 1); // 1 to 3
+    const isVenusaur = (mon && mon.name === "Venusaur");
+    const count = isVenusaur 
+      ? (Math.floor(Math.random() * 2) + 2) // Venusaur spawns 2 to 3
+      : (Math.floor(Math.random() * 2) + 1); // Ivysaur spawns 1 to 2
       
     for (let i = 0; i < count; i++) {
-      extraFoods.push({ ...getFreePos(), ball: pickBall() });
+      extraFoods.push({ ...getFreePos(), ball: pickBallForAbility(mon ? mon.name : "Ivysaur") });
     }
     
     for (let i = 0; i < 10; i++) {
@@ -417,6 +471,20 @@ function drawIcon(kind, x, y, scale) {
     ctx.lineTo(0, 0);
     ctx.lineTo(4 - Math.random() * 2, 4);
     ctx.stroke();
+  } else if (kind === "powerOrb") {
+    const time = Date.now() * 0.01;
+    ctx.beginPath();
+    ctx.arc(0, 0, 7, 0, Math.PI * 2);
+    const hue = time % 360;
+    ctx.fillStyle = `hsl(${hue}, 90%, 60%)`;
+    ctx.fill();
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(-2, -2, 2, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+    ctx.fill();
   } else {
     ctx.beginPath();
     ctx.moveTo(0, 8);
@@ -446,6 +514,19 @@ function pickBall() {
     if (r < 0) return b;
   }
   return BALLS[0];
+}
+
+function pickBallForAbility(stageName) {
+  const r = Math.random();
+  if (stageName === "Venusaur") {
+    if (r < 0.40) return BALLS[0]; // Poké Ball (40%)
+    if (r < 0.80) return BALLS[1]; // Great Ball (40%)
+    if (r < 0.95) return BALLS[2]; // Ultra Ball (15%)
+    return BALLS[3]; // Master Ball (5%)
+  } else {
+    if (r < 0.90) return BALLS[0]; // Poké Ball (90%)
+    return BALLS[1]; // Great Ball (10%)
+  }
 }
 
 function stageFor(score) {
@@ -554,6 +635,7 @@ function getFreePos() {
     snake.some((s) => s.x === p.x && s.y === p.y) ||
     (food && food.x === p.x && food.y === p.y) ||
     (diamond && diamond.x === p.x && diamond.y === p.y) ||
+    (powerOrb && powerOrb.x === p.x && powerOrb.y === p.y) ||
     (extraFoods && extraFoods.some((ef) => ef.x === p.x && ef.y === p.y))
   );
   return p;
@@ -585,6 +667,9 @@ function reset() {
   abilityTimer = 0;
   fireballs = [];
   extraFoods = [];
+  speedBoostActive = false;
+  speedBoostTimeLeft = 0;
+  powerOrb = null;
   screenShake = 0;
   if (abilityStatEl) {
     abilityStatEl.classList.add("hidden");
@@ -616,7 +701,11 @@ function revive() {
   hearts--;
   snake = [{ x: (COLS / 2) | 0, y: (ROWS / 2) | 0 }];
   dir = nextDir = { x: 1, y: 0 };
-  updateHUD();
+  if (gems >= HEART_COST && hearts < MAX_HEARTS) {
+    buyHeart();
+  } else {
+    updateHUD();
+  }
 }
 
 function handleGameOver() {
@@ -691,7 +780,8 @@ function step() {
   }
 
   if (head.x === food.x && head.y === food.y) {
-    score += food.ball.points;
+    const earned = speedBoostActive ? (food.ball.points * 2) : food.ball.points;
+    score += earned;
     applyStage();
     updateHUD();
     food = spawnFood();
@@ -700,19 +790,33 @@ function step() {
     if (!diamond && Math.random() < DIAMOND_CHANCE && gems < MAX_GEMS) {
       diamond = spawnDiamond();
     }
+    
+    if (!powerOrb && Math.random() < POWER_ORB_CHANCE) {
+      powerOrb = { ...getFreePos(), life: POWER_ORB_LIFE };
+    }
   }
 
   // Collision with extraFoods
   for (let i = extraFoods.length - 1; i >= 0; i--) {
     const ef = extraFoods[i];
     if (head.x === ef.x && head.y === ef.y) {
-      score += ef.ball.points;
+      const earned = speedBoostActive ? (ef.ball.points * 2) : ef.ball.points;
+      score += earned;
       applyStage();
       updateHUD();
       extraFoods.splice(i, 1);
       ateFood = true;
       break;
     }
+  }
+
+  // Collision with powerOrb
+  if (powerOrb && head.x === powerOrb.x && head.y === powerOrb.y) {
+    speedBoostActive = true;
+    speedBoostTimeLeft = 171; // 30 seconds at 175ms ticks
+    powerOrb = null;
+    addPop("gem", head.x, head.y);
+    updateHUD();
   }
 
   if (!ateFood) {
@@ -724,10 +828,23 @@ function step() {
     if (diamond.life <= 0) diamond = null;
   }
 
+  if (powerOrb) {
+    powerOrb.life--;
+    if (powerOrb.life <= 0) powerOrb = null;
+  }
+
   // Update fireballs
   for (let i = fireballs.length - 1; i >= 0; i--) {
     const fb = fireballs[i];
     let hit = false;
+    
+    // Check range helper: 3x3 (1 block around) for Charizard's piercing fireballs, 1x1 for others
+    const inRange = (targetX, targetY) => {
+      if (fb.piercing) {
+        return Math.abs(fb.x - targetX) <= 1 && Math.abs(fb.y - targetY) <= 1;
+      }
+      return fb.x === targetX && fb.y === targetY;
+    };
     
     for (let step = 0; step < 3; step++) {
       fb.x += fb.dx;
@@ -742,8 +859,9 @@ function step() {
       }
 
       // Collision with food
-      if (food && fb.x === food.x && fb.y === food.y) {
-        score += food.ball.points;
+      if (food && inRange(food.x, food.y)) {
+        const earned = speedBoostActive ? (food.ball.points * 2) : food.ball.points;
+        score += earned;
         applyStage();
         updateHUD();
         food = spawnFood();
@@ -760,8 +878,9 @@ function step() {
       // Collision with extraFoods
       for (let j = extraFoods.length - 1; j >= 0; j--) {
         const ef = extraFoods[j];
-        if (fb.x === ef.x && fb.y === ef.y) {
-          score += ef.ball.points;
+        if (inRange(ef.x, ef.y)) {
+          const earned = speedBoostActive ? (ef.ball.points * 2) : ef.ball.points;
+          score += earned;
           applyStage();
           updateHUD();
           extraFoods.splice(j, 1);
@@ -778,7 +897,7 @@ function step() {
       if (hit) break;
 
       // Collision with diamond
-      if (diamond && fb.x === diamond.x && fb.y === diamond.y) {
+      if (diamond && inRange(diamond.x, diamond.y)) {
         if (gems < MAX_GEMS) {
           gems++;
           pulseSlot(gemSlotNodes, gems - 1);
@@ -798,6 +917,13 @@ function step() {
           break;
         }
       }
+    }
+  }
+
+  if (speedBoostActive) {
+    speedBoostTimeLeft--;
+    if (speedBoostTimeLeft <= 0) {
+      speedBoostActive = false;
     }
   }
 
@@ -1015,6 +1141,12 @@ function draw() {
     }
   }
 
+  if (powerOrb) {
+    if (powerOrb.life > 15 || powerOrb.life % 4 > 1) {
+      drawIcon("powerOrb", powerOrb.x * SIZE + SIZE / 2, powerOrb.y * SIZE + SIZE / 2, 0.9);
+    }
+  }
+
   snake.forEach((s, i) => {
     const x = s.x * SIZE;
     const y = s.y * SIZE;
@@ -1058,6 +1190,23 @@ function draw() {
     ctx.font = "20px monospace";
     ctx.textAlign = "center";
     ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2);
+  }
+
+  if (speedBoostActive && alive) {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+    ctx.fillRect(PAD * SIZE, 4, (COLS - PAD * 2) * SIZE, 6);
+    const timeRatio = speedBoostTimeLeft / 171;
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+    gradient.addColorStop(0, "#ff007f");
+    gradient.addColorStop(0.5, "#ffea00");
+    gradient.addColorStop(1, "#00e5ff");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(PAD * SIZE, 4, (COLS - PAD * 2) * SIZE * timeRatio, 6);
+    
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 11px monospace";
+    ctx.textAlign = "right";
+    ctx.fillText("BOOST 2x", (COLS - PAD) * SIZE - 4, 22);
   }
 
   ctx.restore();
@@ -1151,7 +1300,10 @@ if (abilityStatEl) {
   abilityStatEl.addEventListener("click", triggerAbility);
 }
 
-tick = setInterval(() => {
+function gameLoop() {
   step();
   draw();
-}, 200);
+  const currentSpeed = speedBoostActive ? 110 : 175;
+  tick = setTimeout(gameLoop, currentSpeed);
+}
+gameLoop();

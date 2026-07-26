@@ -192,6 +192,81 @@
       display: none !important;
     }
 
+    #podiumContainer {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 12px;
+      margin-top: 8px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 12px;
+      width: 100%;
+    }
+    .podium-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 80px;
+      flex-shrink: 0;
+    }
+    .podium-char canvas {
+      width: 20px;
+      height: 20px;
+      image-rendering: pixelated;
+      border-radius: 2px;
+      display: block;
+      margin-bottom: 4px;
+      background: rgba(0,0,0,0.25);
+    }
+    .podium-user {
+      font-weight: bold;
+      font-size: 11px;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 80px;
+      text-align: center;
+      margin-bottom: 1px;
+    }
+    .podium-score {
+      font-size: 11px;
+      font-weight: bold;
+      color: #5dade2;
+      margin-bottom: 4px;
+    }
+    .podium-block {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 16px;
+      border-top-left-radius: 4px;
+      border-top-right-radius: 4px;
+    }
+    .step-first .podium-block {
+      height: 52px;
+      background: linear-gradient(180deg, #f1c40f 0%, #d4ac0d 100%);
+      box-shadow: 0 0 12px rgba(241, 196, 15, 0.35);
+      color: #000;
+    }
+    .step-second .podium-block {
+      height: 38px;
+      background: linear-gradient(180deg, #bdc3c7 0%, #95a5a6 100%);
+      color: #000;
+    }
+    .step-third .podium-block {
+      height: 26px;
+      background: linear-gradient(180deg, #cd7f32 0%, #b87333 100%);
+      color: #000;
+    }
+    .step-first .podium-user {
+      color: #f1c40f;
+      font-size: 12px;
+    }
+
     @media (max-width: 600px) {
       .bar {
         margin-top: 32px;
@@ -236,7 +311,27 @@
         <p id="hint">Swipe / strzałki · ewolucja 15 / 40</p>
         
         <div id="leaderboard">
-          <h3>Top 15 Ranking</h3>
+          <h3>Top 100 Ranking</h3>
+          <div id="podiumContainer" class="hidden">
+            <div class="podium-step step-second" id="podiumStep2">
+              <div class="podium-char"><canvas id="podiumCanvas2" width="20" height="20"></canvas></div>
+              <div class="podium-user" id="podiumUser2">---</div>
+              <div class="podium-score" id="podiumScore2">---</div>
+              <div class="podium-block">2</div>
+            </div>
+            <div class="podium-step step-first" id="podiumStep1">
+              <div class="podium-char"><canvas id="podiumCanvas1" width="20" height="20"></canvas></div>
+              <div class="podium-user" id="podiumUser1">---</div>
+              <div class="podium-score" id="podiumScore1">---</div>
+              <div class="podium-block">1</div>
+            </div>
+            <div class="podium-step step-third" id="podiumStep3">
+              <div class="podium-char"><canvas id="podiumCanvas3" width="20" height="20"></canvas></div>
+              <div class="podium-user" id="podiumUser3">---</div>
+              <div class="podium-score" id="podiumScore3">---</div>
+              <div class="podium-block">3</div>
+            </div>
+          </div>
           <ul id="leaderboardList">
             <li>Wczytywanie...</li>
           </ul>
