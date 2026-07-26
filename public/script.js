@@ -29,7 +29,7 @@ const ROWS = Math.floor(canvas.height / SIZE);
 const PAD = 1;
 const HEART_COST = 3;
 const MAX_GEMS = 3;
-const MAX_HEARTS = 3;
+let MAX_HEARTS = 3;
 const DIAMOND_CHANCE = 0.075;
 const DIAMOND_LIFE = 50;
 const POWER_ORB_CHANCE = 0.035;
@@ -92,7 +92,7 @@ function buildSlots(el, svg, n) {
   return [...el.children];
 }
 const gemSlotNodes = buildSlots(gemSlotsEl, GEM_SVG, MAX_GEMS);
-const heartSlotNodes = buildSlots(heartSlotsEl, HEART_SVG, MAX_HEARTS);
+let heartSlotNodes = buildSlots(heartSlotsEl, HEART_SVG, MAX_HEARTS);
 
 let borderStars = [];
 function initBorderStars() {
@@ -321,6 +321,8 @@ let hearts = 0;
 let pops = [];
 let scoreSubmitted = false;
 
+let difficulty = "normal";
+
 let abilityUnlocked = false;
 let abilityCharges = 0;
 let abilityTimer = 0;
@@ -545,8 +547,7 @@ function updateHUD() {
   if (mon) formEl.textContent = mon.name;
   if (abilityUnlocked) {
     if (abilityActive) {
-      const secs = (shieldTimeLeft * 200 / 1000).toFixed(1);
-      abilityChargesEl.textContent = secs + "s";
+      abilityChargesEl.textContent = "Aktywna";
       abilityStatEl.style.animation = (shieldTimeLeft < 15) ? "pop 0.3s infinite alternate" : "none";
     } else {
       abilityChargesEl.textContent = abilityCharges;
@@ -650,12 +651,25 @@ function spawnDiamond() {
 }
 
 function reset() {
+  if (difficulty === "easy") {
+    MAX_HEARTS = 4;
+    hearts = 4;
+  } else if (difficulty === "hard") {
+    MAX_HEARTS = 2;
+    hearts = 1;
+  } else {
+    MAX_HEARTS = 3;
+    hearts = 1;
+  }
+  
+  heartSlotsEl.innerHTML = HEART_SVG.repeat(MAX_HEARTS);
+  heartSlotNodes = [...heartSlotsEl.children];
+
   snake = [{ x: (COLS / 2) | 0, y: (ROWS / 2) | 0 }];
   dir = nextDir = { x: 1, y: 0 };
   food = spawnFood();
   diamond = null;
   score = 0;
-  hearts = 1;
   gems = 0;
   alive = true;
   evoFlash = 0;
@@ -721,6 +735,14 @@ function handleGameOver() {
   }
 }
 
+function getPoints(basePoints) {
+  let mult = 1.5;
+  if (difficulty === "easy") mult = 1.0;
+  else if (difficulty === "hard") mult = 2.5;
+  
+  return Math.round(basePoints * mult * (speedBoostActive ? 2 : 1));
+}
+
 function step() {
   if (!playing || !alive) return;
   dir = nextDir;
@@ -780,7 +802,7 @@ function step() {
   }
 
   if (head.x === food.x && head.y === food.y) {
-    const earned = speedBoostActive ? (food.ball.points * 2) : food.ball.points;
+    const earned = getPoints(food.ball.points);
     score += earned;
     applyStage();
     updateHUD();
@@ -800,7 +822,7 @@ function step() {
   for (let i = extraFoods.length - 1; i >= 0; i--) {
     const ef = extraFoods[i];
     if (head.x === ef.x && head.y === ef.y) {
-      const earned = speedBoostActive ? (ef.ball.points * 2) : ef.ball.points;
+      const earned = getPoints(ef.ball.points);
       score += earned;
       applyStage();
       updateHUD();
@@ -860,7 +882,7 @@ function step() {
 
       // Collision with food
       if (food && inRange(food.x, food.y)) {
-        const earned = speedBoostActive ? (food.ball.points * 2) : food.ball.points;
+        const earned = getPoints(food.ball.points);
         score += earned;
         applyStage();
         updateHUD();
@@ -879,7 +901,7 @@ function step() {
       for (let j = extraFoods.length - 1; j >= 0; j--) {
         const ef = extraFoods[j];
         if (inRange(ef.x, ef.y)) {
-          const earned = speedBoostActive ? (ef.ball.points * 2) : ef.ball.points;
+          const earned = getPoints(ef.ball.points);
           score += earned;
           applyStage();
           updateHUD();
@@ -958,10 +980,10 @@ function step() {
   } else if (lineKey === "pikachu") {
     if (mon && mon.name === "Raichu") {
       maxCharges = 4;
-      regenTicks = 125; // 25s
+      regenTicks = 200; // Increased cooldown (~35s)
     } else {
       maxCharges = 3;
-      regenTicks = 150;
+      regenTicks = 250; // Increased cooldown (~44s)
     }
   }
 
@@ -1300,10 +1322,38 @@ if (abilityStatEl) {
   abilityStatEl.addEventListener("click", triggerAbility);
 }
 
+document.querySelectorAll(".diff-option").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".diff-option").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    difficulty = btn.dataset.diff;
+  });
+});
+
 function gameLoop() {
   step();
   draw();
-  const currentSpeed = speedBoostActive ? 110 : 175;
+  
+  let baseSpeed = 175;
+  let minSpeed = 110;
+  let speedBoostSpeed = 110;
+  let decayFactor = 1.2;
+  
+  if (difficulty === "easy") {
+    baseSpeed = 220;
+    minSpeed = 150;
+    speedBoostSpeed = 140;
+    decayFactor = 1.5;
+  } else if (difficulty === "hard") {
+    baseSpeed = 130;
+    minSpeed = 80;
+    speedBoostSpeed = 80;
+    decayFactor = 1.0;
+  }
+  
+  const speedWithoutBoost = Math.max(minSpeed, baseSpeed - score * decayFactor);
+  const currentSpeed = speedBoostActive ? speedBoostSpeed : speedWithoutBoost;
+  
   tick = setTimeout(gameLoop, currentSpeed);
 }
 gameLoop();

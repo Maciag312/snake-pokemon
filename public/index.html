@@ -267,6 +267,60 @@
       font-size: 12px;
     }
 
+    .diff-selector {
+      margin-top: 16px;
+      margin-bottom: 20px;
+      width: 100%;
+    }
+    .diff-options {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+    }
+    .diff-option {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 8px;
+      color: #eee;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+    .diff-option:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .diff-option.active {
+      background: rgba(52, 152, 219, 0.15);
+      border-color: #3498db;
+      box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
+      color: #fff;
+    }
+    .diff-option.active[data-diff="easy"] {
+      background: rgba(46, 204, 113, 0.15);
+      border-color: #2ecc71;
+      box-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+    }
+    .diff-option.active[data-diff="hard"] {
+      background: rgba(231, 76, 60, 0.15);
+      border-color: #e74c3c;
+      box-shadow: 0 0 10px rgba(231, 76, 60, 0.3);
+    }
+    .diff-name {
+      font-weight: bold;
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+    .diff-desc {
+      font-size: 9px;
+      opacity: 0.7;
+      white-space: nowrap;
+    }
+
     @media (max-width: 600px) {
       .bar {
         margin-top: 32px;
@@ -307,8 +361,36 @@
           </div>
         </div>
         
+        <div class="diff-selector">
+          <div class="diff-options">
+            <button type="button" class="diff-option" data-diff="easy">
+              <svg class="diff-icon" viewBox="0 0 24 24" width="20" height="20" style="margin-bottom: 4px;">
+                <path d="M12 2C8.69 2 6 6.03 6 11c0 4.97 2.69 9 6 9s6-4.03 6-9c0-4.97-2.69-9-6-9zm-1 11c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z" fill="#2ecc71"/>
+              </svg>
+              <span class="diff-name">Młody Trener</span>
+              <span class="diff-desc">Serca: 4 · Wolno (1.0x)</span>
+            </button>
+            <button type="button" class="diff-option active" data-diff="normal">
+              <svg class="diff-icon" viewBox="0 0 24 24" width="20" height="20" style="margin-bottom: 4px;">
+                <circle cx="12" cy="12" r="10" fill="none" stroke="#3498db" stroke-width="2"/>
+                <path d="M2 12h20" stroke="#3498db" stroke-width="2"/>
+                <circle cx="12" cy="12" r="3" fill="#fff" stroke="#3498db" stroke-width="2"/>
+              </svg>
+              <span class="diff-name">Trener</span>
+              <span class="diff-desc">Serca: 3 · Normalnie (1.5x)</span>
+            </button>
+            <button type="button" class="diff-option" data-diff="hard">
+              <svg class="diff-icon" viewBox="0 0 24 24" width="20" height="20" style="margin-bottom: 4px;">
+                <path d="M12 2L15 8L21 9L16.5 14L18 20L12 17L6 20L7.5 14L3 9L9 8L12 2Z" fill="#e74c3c"/>
+              </svg>
+              <span class="diff-name">Mistrz</span>
+              <span class="diff-desc">Serca: 2 · Szybko (2.5x)</span>
+            </button>
+          </div>
+        </div>
+        
         <button id="start" type="button">Start Game</button>
-        <p id="hint">Swipe / strzałki · ewolucja 15 / 40</p>
+
         
         <div id="leaderboard">
           <h3>Top 100 Ranking</h3>
