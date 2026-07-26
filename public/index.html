@@ -23,6 +23,9 @@
       transition: background 0.4s ease;
     }
     .page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       width: min(100%, 832px);
       max-width: 100%;
     }
@@ -99,13 +102,14 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       background: rgba(10, 8, 14, 0.95);
       text-align: center;
       gap: 12px;
       z-index: 3;
       padding: 12px;
       border-radius: 8px;
+      overflow-y: auto;
     }
     #menu.hidden { display: none; }
     .menu-group {
@@ -132,13 +136,15 @@
     
     #leaderboard {
       width: 100%;
-      max-width: 300px;
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 4px;
-      padding: 8px;
-      max-height: 220px;
+      background: rgba(10, 8, 14, 0.95);
+      border: 1px solid #5a4a6a;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      max-height: 280px;
       overflow-y: auto;
+      box-sizing: border-box;
     }
     #leaderboard h3 { font-size: 14px; margin-bottom: 6px; color: #a89fbe; border-bottom: 1px solid #333; padding-bottom: 4px;}
     #leaderboardList { list-style: none; padding: 0; margin: 0; font-size: 12px; }
@@ -326,6 +332,26 @@
         margin-top: 32px;
         margin-bottom: 16px;
       }
+      .menu-group, #leaderboard {
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+      #menu {
+        padding: 8px !important;
+        gap: 8px !important;
+      }
+      .diff-option {
+        padding: 6px 2px !important;
+      }
+      .diff-name {
+        font-size: 10px !important;
+      }
+      .diff-desc {
+        font-size: 7.5px !important;
+      }
+      #leaderboard {
+        max-height: 160px !important;
+      }
     }
   </style>
 </head>
@@ -391,34 +417,34 @@
         
         <button id="start" type="button">Start Game</button>
 
-        
-        <div id="leaderboard">
-          <h3>Top 100 Ranking</h3>
-          <div id="podiumContainer" class="hidden">
-            <div class="podium-step step-second" id="podiumStep2">
-              <div class="podium-char"><canvas id="podiumCanvas2" width="20" height="20"></canvas></div>
-              <div class="podium-user" id="podiumUser2">---</div>
-              <div class="podium-score" id="podiumScore2">---</div>
-              <div class="podium-block">2</div>
-            </div>
-            <div class="podium-step step-first" id="podiumStep1">
-              <div class="podium-char"><canvas id="podiumCanvas1" width="20" height="20"></canvas></div>
-              <div class="podium-user" id="podiumUser1">---</div>
-              <div class="podium-score" id="podiumScore1">---</div>
-              <div class="podium-block">1</div>
-            </div>
-            <div class="podium-step step-third" id="podiumStep3">
-              <div class="podium-char"><canvas id="podiumCanvas3" width="20" height="20"></canvas></div>
-              <div class="podium-user" id="podiumUser3">---</div>
-              <div class="podium-score" id="podiumScore3">---</div>
-              <div class="podium-block">3</div>
-            </div>
-          </div>
-          <ul id="leaderboardList">
-            <li>Wczytywanie...</li>
-          </ul>
+      </div>
+    </div>
+    
+    <div id="leaderboard">
+      <h3>Top 100 Ranking</h3>
+      <div id="podiumContainer" class="hidden">
+        <div class="podium-step step-second" id="podiumStep2">
+          <div class="podium-char"><canvas id="podiumCanvas2" width="20" height="20"></canvas></div>
+          <div class="podium-user" id="podiumUser2">---</div>
+          <div class="podium-score" id="podiumScore2">---</div>
+          <div class="podium-block">2</div>
+        </div>
+        <div class="podium-step step-first" id="podiumStep1">
+          <div class="podium-char"><canvas id="podiumCanvas1" width="20" height="20"></canvas></div>
+          <div class="podium-user" id="podiumUser1">---</div>
+          <div class="podium-score" id="podiumScore1">---</div>
+          <div class="podium-block">1</div>
+        </div>
+        <div class="podium-step step-third" id="podiumStep3">
+          <div class="podium-char"><canvas id="podiumCanvas3" width="20" height="20"></canvas></div>
+          <div class="podium-user" id="podiumUser3">---</div>
+          <div class="podium-score" id="podiumScore3">---</div>
+          <div class="podium-block">3</div>
         </div>
       </div>
+      <ul id="leaderboardList">
+        <li>Wczytywanie...</li>
+      </ul>
     </div>
     
     <div class="bar hidden" id="statusBar">

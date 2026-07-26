@@ -698,11 +698,15 @@ function showMenu() {
   statusBarEl.classList.add("hidden");
   refreshLeaderboardUI();
   menuEl.classList.remove("hidden");
+  const lbEl = document.getElementById("leaderboard");
+  if (lbEl) lbEl.classList.remove("hidden");
 }
 
 function startGame() {
   lineKey = selectedPokemon;
   menuEl.classList.add("hidden");
+  const lbEl = document.getElementById("leaderboard");
+  if (lbEl) lbEl.classList.add("hidden");
   statusBarEl.classList.remove("hidden");
   startBtn.blur();
   reset();
