@@ -695,6 +695,7 @@ function reset() {
 
 function showMenu() {
   playing = false;
+  canvas.classList.add("hidden");
   statusBarEl.classList.add("hidden");
   refreshLeaderboardUI();
   menuEl.classList.remove("hidden");
@@ -704,6 +705,7 @@ function showMenu() {
 
 function startGame() {
   lineKey = selectedPokemon;
+  canvas.classList.remove("hidden");
   menuEl.classList.add("hidden");
   const lbEl = document.getElementById("leaderboard");
   if (lbEl) lbEl.classList.add("hidden");
@@ -1318,6 +1320,7 @@ selectedPokemon = "pikachu";
 lineKey = selectedPokemon;
 reset();
 playing = false;
+canvas.classList.add("hidden");
 draw();
 drawOptionHeads();
 refreshLeaderboardUI();
